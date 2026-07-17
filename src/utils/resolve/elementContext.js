@@ -43,21 +43,26 @@ export function captureForEdit(el, kebabProp, { sheets = document.styleSheets } 
 }
 
 export function captureForComment(el, { sheets = document.styleSheets } = {}) {
-  const cs = getComputedStyle(el);
-  const isGrid = cs.display.includes('grid');
-  const layout = {
-    display: cs.display,
-    flexDirection: (!isGrid && cs.display.includes('flex')) ? cs.flexDirection : null,
-    gridTemplateColumns: isGrid && cs.gridTemplateColumns !== 'none' ? cs.gridTemplateColumns : null,
-    gridTemplateRows: isGrid && cs.gridTemplateRows !== 'none' ? cs.gridTemplateRows : null,
-    gap: (cs.gap && cs.gap !== 'normal' && cs.gap !== '0px') ? cs.gap : null,
-  };
-  const kids = Array.from(el.children).map(c => ({ tag: c.tagName.toLowerCase(), classes: Array.from(c.classList) }));
-  const r = el.getBoundingClientRect();
-  const bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
+  const theme = safeTheme(el, sheets);
   const chains = {};
   for (const p of PAINT_PROPS) { const c = resolveProp(el, p, { sheets }); if (c) chains[p] = c; }
-  return { chains, layout, children: summarizeChildren(kids), bbox, theme: safeTheme(el, sheets) };
+  try {
+    const cs = getComputedStyle(el);
+    const isGrid = cs.display.includes('grid');
+    const layout = {
+      display: cs.display,
+      flexDirection: (!isGrid && cs.display.includes('flex')) ? cs.flexDirection : null,
+      gridTemplateColumns: isGrid && cs.gridTemplateColumns !== 'none' ? cs.gridTemplateColumns : null,
+      gridTemplateRows: isGrid && cs.gridTemplateRows !== 'none' ? cs.gridTemplateRows : null,
+      gap: (cs.gap && cs.gap !== 'normal' && cs.gap !== '0px') ? cs.gap : null,
+    };
+    const kids = Array.from(el.children).map(c => ({ tag: c.tagName.toLowerCase(), classes: Array.from(c.classList) }));
+    const r = el.getBoundingClientRect();
+    const bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
+    return { chains, layout, children: summarizeChildren(kids), bbox, theme };
+  } catch {
+    return { chains, theme };
+  }
 }
 
 function safeTheme(el, sheets) {

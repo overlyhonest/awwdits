@@ -9,6 +9,9 @@ describe('childSignature', () => {
   it('is just the tag when there are no classes', () => {
     expect(childSignature({ tag: 'div', classes: [] })).toBe('div');
   });
+  it('filters out Tailwind variant classes containing a colon', () => {
+    expect(childSignature({ tag: 'div', classes: ['hover:bg-red', 'w-8', 'focus:ring'] })).toBe('div.w-8');
+  });
 });
 
 describe('summarizeChildren', () => {
