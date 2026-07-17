@@ -1,0 +1,87 @@
+/* Awwdits design tokens.
+ *
+ * Role-based semantic custom properties. awwdits is dark-only — there is no light
+ * palette and no theme toggle, so these values live unconditionally on :root. Any
+ * context that loads this file (panel, Storybook, tests) is dark by construction;
+ * nothing has to opt in.
+ *
+ * Consumed in JS through the thin var()-shim in components/redesign/tokens.js —
+ * components never hardcode hex. Values only live here.
+ */
+
+:root {
+  /* ── Surfaces ──
+   * The toolbar is the product's canonical surface, so the panel canvas sits on the
+   * SAME material (#2d2d30) rather than a darker one — the panel, the toolbar and the
+   * Changes popover are one system. Everything that was a step above the canvas moved
+   * up with it, so elevation reads exactly as before:
+   *
+   *   canvas #2d2d30 → hover #37373c → raised #3a3a3d   (the toolbar's own ladder)
+   *
+   * Values above `raised` are new headroom: lifting a canvas costs you the top of the
+   * scale, so `surface-raised`/`border-strong`/`surface-active` had to move up to stay
+   * distinguishable. Mirrored page-side in src/content/overlayTokens.js. */
+  --background: #2d2d30;        /* canvas — identical to the toolbar's surface */
+  --surface: #3a3a3d;           /* raised: pills, active tab, secondary button, INPUTS */
+  --surface-raised: #45454a;    /* higher/innermost: box-model content */
+  --card: #3a3a3d;
+  --box-fill: rgba(255, 255, 255, 0.045); /* box-model padding box — a wash, not a surface */
+
+  /* ── Text ── */
+  --foreground: #f1f1f3;
+  --foreground-muted: #747984;
+  --foreground-weak: #777c87;
+  --foreground-subtle: #4a4a4e;
+  --foreground-label: #a4a8b2;  /* readable field labels (brighter than weak) */
+
+  /* ── Borders ──
+   * `border` is the toolbar's border: on the lifted canvas the old #2a2a2d was DARKER
+   * than the surface it divided, which would have made every section rule vanish. */
+  --border: #3e3e40;
+  --border-weak: #37373c;       /* quiet hover surface (tabs, rows), despite the name */
+  --border-strong: #4a4a50;
+
+  /* ── Interactive states ──
+   * Elements resting at --surface (#3a3a3d) need hover/press ABOVE it. Things resting
+   * on the bare canvas use --border-weak (#37373c) — the toolbar's own hover. */
+  --surface-hover: #43434a;
+  --surface-active: #4b4b52;
+  --ring: rgba(255, 255, 255, 0.22);
+
+  /* ── Badge shades — darker variants of the accent hues below ──
+   * A badge is an accent fill carrying white text, and the *-solid values are too
+   * light for that: white on --warning-solid is 2.08:1 and on --success-solid 3.06:1.
+   * These shades keep the hue and clear WCAG AA. Used by the page-context overlays
+   * (see src/content/overlayTokens.js) for hover/selected/measure element badges. */
+  --info-badge: #1557b0;              /* white text 6.95:1 */
+  --warning-badge: #8a5a00;           /* white text 5.93:1 */
+  --success-badge: #1e7e34;           /* white text 5.14:1 */
+
+  /* ── Info / brand accent — lighter on-surface blue for legibility ── */
+  --info-solid: #1a73e8;              /* fills: primary button, indicators */
+  --info-solid-hover: #4285f4;
+  --info-solid-foreground: #ffffff;   /* text/icon on a solid fill — not a theme role */
+  --info-foreground: #8ab4f8;         /* accent text/icon on a surface */
+  --info-muted: rgba(26, 115, 232, 0.18);
+  --info-tint: #a8c7fa;               /* light-blue highlight (cursor mark) */
+  --focus-ring: rgba(138, 180, 248, 0.6);
+
+  /* ── Warning — non-critical findings: off-grid, no-token ── */
+  --warning-solid: #e8a838;
+  --warning-foreground: #e8a838;
+  --warning-muted: rgba(232, 168, 56, 0.16);
+
+  /* ── Destructive — contrast fails, errors ── */
+  --destructive-solid: #e8453a;
+  --destructive-foreground: #f28b82;
+  --destructive-muted: rgba(232, 69, 58, 0.16);
+
+  /* ── Success — compliant / passing ── */
+  --success-solid: #34a853;
+  --success-foreground: #81c995;
+  --success-muted: rgba(52, 168, 83, 0.16);
+
+  /* ── Misc ── */
+  --scrollbar: rgba(255, 255, 255, 0.16);
+  --scrollbar-hover: rgba(255, 255, 255, 0.28);
+}

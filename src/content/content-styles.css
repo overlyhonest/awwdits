@@ -1,0 +1,17 @@
+/* Awwdits content styles - injected into pages */
+
+/* The panel iframe carries its own stylesheet + tokens; this container only needs a
+   sane inherited face for anything rendered outside it. Matches FONT.sans in
+   src/content/overlayTokens.js. */
+#awwdits-sidebar-container {
+  font-family: 'Special Gothic', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#awwdits-sidebar-frame {
+  display: block;
+}
+
+#awwdits-measure-canvas {
+  pointer-events: none;
+}

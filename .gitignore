@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+storybook-static/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+*.swp
+
+# Local env / secrets
+.env
+.env.local
+
+# Local agent config (permissions, machine-specific settings) and scratch ledgers
+.claude/
+.superpowers/
