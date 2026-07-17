@@ -215,11 +215,21 @@ pageHeader({ url, viewport:{w,h}, date, theme }) -> string  // the '# awwdits ·
 ### `exportNotes.js` (pure, extended)
 
 ```js
-formatAll(records, pageState) -> string
-formatRecord(record, index, pageMode) -> string
-// pageState: { header:string, mode:'light'|'dark'|null }. When omitted (back-compat / no
-// DOM), formatAll behaves as today: no header, plain selector + comment + edits.
+formatAll(records, pageState = null) -> string
+formatRecord(record, index, pageMode = null) -> string
+// pageState: { header:string, mode:'light'|'dark'|null } | null. Records ALWAYS render in
+// the new layout (`## [n] selector`, 4-space-indented lines, no `Changes:` header). When
+// pageState is null, the header line is simply omitted — the record bodies are unchanged.
+// `index` is the 1-based position formatAll passes in; it produces the `[n]` in the heading.
 ```
+
+**Format change is unconditional and intentional.** The layout moves from today's
+`## selector` / `Changes:` / `  - prop: before → after` to `## [n] selector` with
+4-space-indented lines and no `Changes:` header (the approved target output). This restyles
+every export — including untokenized pages — but adds no information to the untokenized case.
+The single caller, [content-script.js:223](../../../src/content/content-script.js), is
+updated to pass `pageState`. The existing `exportNotes.test.js` cases are rewritten to the
+new layout as part of this work.
 
 ## Output format (Phase 1)
 
@@ -322,8 +332,9 @@ Every failure drops one detail and keeps the rest:
 - all three fixtures above render exactly as shown (header + records).
 - 4-corner collapse: a record with the four corner longhands (same before/after) → one
   `border-radius … (4 corners)` line + one chain; differing afters → four lines, no collapse.
-- floor: a record with no `context`, and `formatAll(records)` called with no `pageState`,
-  renders identically to the current implementation (locks the floor).
+- floor: an untokenized record (no `context`) renders as `## [n] selector` + optional
+  `    Comment: "…"` + plain 4-space-indented `    prop: before → after` lines, with **no**
+  declared/chain/layout/theme blocks (locks the floor — new layout, zero resolution noise).
 - per-record theme line appears only when element mode ≠ page mode.
 
 **`src/utils/resolve/pageState.test.js`** (pure core + fake carriers):
