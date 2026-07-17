@@ -68,13 +68,13 @@ function formatEdits(edits, chains) {
     if (skip.has(e.property)) {
       if (!collapsed) {
         collapsed = true;
-        out.push(`    border-radius: ${e.before} → ${e.after}  (4 corners)`);
+        out.push(`    border-radius: ${e.before || '(none)'} → ${e.after}  (4 corners)`);
         const chain = CORNERS.map(c => chains[c]).find(Boolean);
         if (chain) out.push(...renderChainBlock(chain, 6));
       }
       continue;
     }
-    out.push(`    ${e.property}: ${e.before} → ${e.after}`);
+    out.push(`    ${e.property}: ${e.before || '(none)'} → ${e.after}`);
     if (chains[e.property]) out.push(...renderChainBlock(chains[e.property], 6));
   }
   return out;

@@ -78,4 +78,12 @@ describe('sourceForRule', () => {
     const r = rule('.a', { color: 'red' }, { href: 'https://x/assets/index-a3f2.css' });
     expect(sourceForRule(r)).toEqual({ file: 'index-a3f2.css', line: null });
   });
+
+  it('resolves the line via selectorText even when source is spaced/multi-line', () => {
+    const source = 'a {}\n\n.rounded-md {\n  border-radius: var(--radius-md);\n}';
+    const r = rule('.rounded-md', { 'border-radius': 'var(--radius-md)' }, { cssText: '.rounded-md { border-radius: var(--radius-md); }' });
+    const sheet = { ownerNode: { tagName: 'STYLE', textContent: source, getAttribute: (a) => a === 'data-vite-dev-id' ? '/abs/path/theme.css' : null }, cssRules: [r] };
+    const [collected] = collectStyleRules([sheet]);          // runs attachOwner (reads ownerNode.textContent + getAttribute)
+    expect(sourceForRule(collected)).toEqual({ file: 'theme.css', line: 3 });   // '.rounded-md' is on line 3
+  });
 });

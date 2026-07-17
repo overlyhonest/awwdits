@@ -481,7 +481,7 @@ function handleSidebarMessage(e) {
         // Convert camelCase → kebab-case so setProperty works correctly
         const kebab = e.data.property.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
         const before = getComputedStyle(el).getPropertyValue(kebab).trim();
-        const context = captureForEdit(el, kebab);   // capture from author rules, pre-override
+        let context; try { context = captureForEdit(el, kebab); } catch { context = undefined; }   // capture from author rules, pre-override
         el.style.setProperty(kebab, e.data.value, 'important');
         if (e.data.property === 'fontFamily') injectGoogleFont(e.data.value);
         postToSidebar(MESSAGES.CHANGE_APPLIED, {

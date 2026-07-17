@@ -22,6 +22,11 @@ describe('formatRecord — floor (untokenized)', () => {
     expect(formatRecord({ selector: '.hero h1', comment: '', edits: [{ property: 'line-height', before: '1.1', after: '1.3' }] }, 1))
       .toBe('## [1] .hero h1\n    line-height: 1.1 → 1.3');
   });
+
+  it('renders (none) for an empty before value', () => {
+    expect(formatRecord({ selector: 'span', comment: '', edits: [{ property: 'content', before: '', after: '"x"' }] }, 1))
+      .toBe('## [1] span\n    content: (none) → "x"');
+  });
 });
 
 describe('formatRecord — resolved chain (item 1)', () => {

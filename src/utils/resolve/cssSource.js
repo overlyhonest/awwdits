@@ -44,7 +44,6 @@ function attachOwner(r, sheet) {
     } else if (sheet.href) {
       r.href = sheet.href;
     }
-    if (r.ruleText === undefined) r.ruleText = r.cssText;
   } catch { /* leave undefined — sourceForRule degrades */ }
 }
 
@@ -54,7 +53,13 @@ export function sourceForRule(rule) {
   try {
     if (rule.ownerNodeText != null) {
       const file = basename(rule.ownerViteId) || null;
-      const idx = rule.ruleText ? rule.ownerNodeText.indexOf(rule.ruleText) : -1;
+      // Search for the SELECTOR, not the full rule text: cssText is the browser's
+      // reserialized rule (normalized whitespace, added `;`, lowercased hex) and rarely
+      // matches the original source verbatim, whereas the selector usually does. Known
+      // limitation: if the same selector appears earlier in the file, that occurrence's
+      // line is returned instead of the true one (acceptable degradation).
+      const needle = rule.selectorText || rule.ruleText;
+      const idx = needle ? rule.ownerNodeText.indexOf(needle) : -1;
       const line = idx >= 0 ? rule.ownerNodeText.slice(0, idx).split('\n').length : null;
       return { file, line };
     }
