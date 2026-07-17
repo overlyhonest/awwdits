@@ -54,4 +54,32 @@ describe('resolveChain', () => {
   it('returns no hops when the declaration has no var()', () => {
     expect(resolveChain('20px', mk({}), {}).hops).toEqual([]);
   });
+
+  it('follows a fallback into a nested var() instead of stopping', () => {
+    const r = resolveChain('var(--missing, var(--y, blue))', mk({}), {});
+    expect(r.hops.map(h => [h.name, h.value])).toEqual([
+      ['--missing (fallback)', 'var(--y, blue)'],
+      ['--y (fallback)', 'blue'],
+    ]);
+    expect(r.hops.every(h => h.source && h.source.file === null && h.source.line === null)).toBe(true);
+  });
+
+  it('does not flag rem when the only hop value contains "rem" as a substring', () => {
+    const lookup = mk({ '--bg': 'url(/img/premium-badge.svg)' });
+    const root = { value: '15px', source: S };
+    expect(resolveChain('var(--bg)', lookup, { root }).root).toBe(null);
+  });
+
+  it('still detects an anchorless rem like .5rem', () => {
+    const lookup = mk({ '--gap': '.5rem' });
+    const root = { value: '15px', source: S };
+    expect(resolveChain('var(--gap)', lookup, { root }).root).toEqual(root);
+  });
+
+  it('produces no hops when a var has no fallback and lookup misses', () => {
+    const r = resolveChain('var(--gone)', mk({}), {});
+    expect(r.hops).toEqual([]);
+    expect(r.truncated).toBe(false);
+    expect(r.cyclic).toBe(false);
+  });
 });
