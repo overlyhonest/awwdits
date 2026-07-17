@@ -42,7 +42,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "sidebar.js", "sidebar.css", "*.js", "*.css"],
+      "resources": ["sidebar.html", "sidebar.js", "sidebar.css", "*.js", "*.css", "fonts/*.woff2"],
       "matches": ["<all_urls>"]
     }
   ]
