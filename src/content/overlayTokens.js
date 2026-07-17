@@ -101,15 +101,28 @@ export const WEIGHT = { regular: 400, medium: 500, semibold: 600 };
 // The overlays live in the host page, which has no awwdits stylesheet. Idempotent —
 // every overlay may call it. Weights match src/sidebar/index.html so a glyph renders
 // identically in the panel and on the page.
-const FONT_LINK_ID = 'awwdits-overlay-fonts';
-const FONT_HREF =
-  'https://fonts.googleapis.com/css2?family=Special+Gothic+Expanded+One&family=Special+Gothic&family=JetBrains+Mono:wght@400;500;600&display=swap';
+const FONT_STYLE_ID = 'awwdits-overlay-fonts';
+
+// The families are vendored (see public/fonts/README.md) and loaded from the extension,
+// NOT from Google. The overlays live in the host page, so a <link> to fonts.googleapis.com
+// was governed by the PAGE's CSP: strict-CSP sites (GitHub: font-src github.githubassets.com)
+// blocked it and every face silently fell back to Arial. Extension URLs sidestep the page's
+// policy, and nothing is requested from a third party.
+//
+// JetBrains Mono is a variable font — one file serves 400-700, hence the weight range rather
+// than four faces. The Special Gothic families ship Regular only.
+const FACES = [
+  { family: 'Special Gothic Expanded One', file: 'special-gothic-expanded-one-latin.woff2', weight: '400' },
+  { family: 'Special Gothic',              file: 'special-gothic-latin.woff2',              weight: '400' },
+  { family: 'JetBrains Mono',              file: 'jetbrains-mono-latin.woff2',              weight: '400 700' },
+];
 
 export function ensureOverlayFonts() {
-  if (document.getElementById(FONT_LINK_ID)) return;
-  const link = document.createElement('link');
-  link.id = FONT_LINK_ID;
-  link.rel = 'stylesheet';
-  link.href = FONT_HREF;
-  (document.head || document.documentElement).appendChild(link);
+  if (document.getElementById(FONT_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = FONT_STYLE_ID;
+  style.textContent = FACES.map(f => `@font-face{font-family:'${f.family}';` +
+    `src:url('${chrome.runtime.getURL('fonts/' + f.file)}') format('woff2');` +
+    `font-weight:${f.weight};font-style:normal;font-display:swap;}`).join('');
+  (document.head || document.documentElement).appendChild(style);
 }
