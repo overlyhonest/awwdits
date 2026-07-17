@@ -64,8 +64,8 @@ function App() {
           setNotes(prev => removeEmpty(clearEdits(prev, recordKey(e.data.data))));
           break;
         case MESSAGES.COMMENT_SAVED: {
-          const { selector, path, label, text } = e.data.data;
-          setNotes(prev => removeEmpty(setCommentOp(prev, { selector, path, label }, text)));
+          const { selector, path, label, text, context } = e.data.data;
+          setNotes(prev => removeEmpty(setCommentOp(prev, { selector, path, label, context }, text)));
           break;
         }
         case MESSAGES.CLEAR_ALL_CHANGES:

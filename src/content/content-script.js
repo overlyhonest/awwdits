@@ -15,6 +15,8 @@ import { computeHeldTool, resolveEffective, commitOnUse } from './toolMode.js';
 import { initChangesPopover } from './changesPopover.js';
 import { formatAll } from '../sidebar/notes/exportNotes.js';
 import { COLORS } from './overlayTokens.js';
+import { captureForEdit, captureForComment } from '../utils/resolve/elementContext.js';
+import { currentPageState } from '../utils/resolve/pageState.js';
 
 // --- Google Font injector ---
 // Names of fonts the INSPECTED PAGE might use — detection data for the editor's
@@ -220,7 +222,9 @@ function selectRecord(rec) {
 // without opening the panel. changeRecords is the latest CHANGES_SUMMARY payload.
 function copyChanges() {
   if (!changeRecords.length) return;
-  const text = formatAll(changeRecords);
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const pageState = currentPageState(date);
+  const text = formatAll(changeRecords, pageState);
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
@@ -477,11 +481,12 @@ function handleSidebarMessage(e) {
         // Convert camelCase → kebab-case so setProperty works correctly
         const kebab = e.data.property.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
         const before = getComputedStyle(el).getPropertyValue(kebab).trim();
+        const context = captureForEdit(el, kebab);   // capture from author rules, pre-override
         el.style.setProperty(kebab, e.data.value, 'important');
         if (e.data.property === 'fontFamily') injectGoogleFont(e.data.value);
         postToSidebar(MESSAGES.CHANGE_APPLIED, {
           selector: buildSelector(el), path: buildPath(el), label: buildSelector(el),
-          property: kebab, before, after: e.data.value,
+          property: kebab, before, after: e.data.value, context,
         });
       }
       break;
