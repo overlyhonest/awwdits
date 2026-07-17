@@ -163,7 +163,7 @@ Expected: FAIL — "Failed to resolve import ./varChain.js" / `resolveChain is n
 // declared text of any custom property, reconstruct the chain of hops from token to leaf.
 // Knows nothing about the DOM — the caller binds `lookup` to an element. calc() and other
 // non-var text pass through verbatim; nested var() inside them is still followed.
-const NO_SOURCE = { file: null, line: null };
+const NO_SOURCE = Object.freeze({ file: null, line: null });
 
 // The first var(...) reference in `text`, split into name + optional fallback.
 // "calc(var(--radius) - 2px)" -> { name: '--radius', fallback: null }
@@ -218,13 +218,13 @@ export function resolveChain(declaredText, lookup, { root = null, maxDepth = 16 
       text = found.text;                      // follow into the resolved value (may hold var())
     } else if (parsed.fallback !== null) {
       hops.push({ name: `${parsed.name} (fallback)`, value: parsed.fallback, source: NO_SOURCE });
-      break;                                   // fallback is a leaf; nothing more to resolve
+      text = parsed.fallback;                  // follow into the fallback (may itself hold var())
     } else {
       break;                                   // unresolvable and no fallback — chain ends here
     }
   }
 
-  const hasRem = /rem/.test(declaredText) || hops.some(h => /rem/.test(h.value));
+  const hasRem = /[\d.]rem\b/.test(declaredText) || hops.some(h => /[\d.]rem\b/.test(h.value));
   return { hops, root: hasRem ? root : null, truncated, cyclic };
 }
 ```
