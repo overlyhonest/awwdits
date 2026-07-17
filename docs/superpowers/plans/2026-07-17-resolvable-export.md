@@ -1274,7 +1274,7 @@ No new unit tests (extension/DOM glue). Verified manually against the real dev a
 In `src/content/content-script.js`, add the import near the top (with the other resolve-side imports):
 
 ```js
-import { captureForEdit, captureForComment } from '../utils/resolve/elementContext.js';
+import { captureForEdit } from '../utils/resolve/elementContext.js';
 import { currentPageState } from '../utils/resolve/pageState.js';
 ```
 

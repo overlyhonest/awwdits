@@ -15,7 +15,7 @@ import { computeHeldTool, resolveEffective, commitOnUse } from './toolMode.js';
 import { initChangesPopover } from './changesPopover.js';
 import { formatAll } from '../sidebar/notes/exportNotes.js';
 import { COLORS } from './overlayTokens.js';
-import { captureForEdit, captureForComment } from '../utils/resolve/elementContext.js';
+import { captureForEdit } from '../utils/resolve/elementContext.js';
 import { currentPageState } from '../utils/resolve/pageState.js';
 
 // --- Google Font injector ---
