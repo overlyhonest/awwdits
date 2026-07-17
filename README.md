@@ -10,7 +10,9 @@ a coding agent can use directly: which element, what is wrong, and the exact CSS
 
 ## Install
 
-Not on the Chrome Web Store yet, so build it:
+Not on the Chrome Web Store yet. Download
+[the latest release](https://github.com/overlyhonest/awwdits/releases/latest) and unzip it,
+or build from source:
 
 ```bash
 git clone https://github.com/overlyhonest/awwdits.git
@@ -19,8 +21,8 @@ npm install
 npm run build
 ```
 
-Then open `chrome://extensions`, turn on Developer mode, choose "Load unpacked", and
-select `dist/`.
+Then open `chrome://extensions`, turn on Developer mode, choose "Load unpacked", and select
+the unzipped folder (or `dist/` if you built it yourself).
 
 ## How it works
 

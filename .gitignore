@@ -20,3 +20,6 @@ npm-debug.log*
 # Local agent config (permissions, machine-specific settings) and scratch ledgers
 .claude/
 .superpowers/
+
+# Release artifacts
+*.zip
