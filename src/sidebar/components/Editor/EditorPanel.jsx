@@ -4,6 +4,7 @@ import { COLOR, FONT } from '../redesign/tokens.js';
 import { SectionHeader } from '../Inspector/InspectorPanel.jsx';
 import { ContrastGlyph, Pill } from '../Inspector/AuditRow.jsx';
 import { contrastVerdict } from '../Inspector/inspectorStyles.js';
+import { formatDimension } from '../../../utils/helpers/dimensionHelpers.js';
 
 // System-native <select> styling (used for font family + weight dropdowns).
 const SELECT_STYLE = {
@@ -230,8 +231,8 @@ function parseCorners(radius) {
 function PaddingCross({ styles, onApplyStyle, radius }) {
   const pad = styles?.spacing?.padding ?? {};
   const dims = styles?.dimensions;
-  const displayWidth  = dims?.width  ? Math.round(parseFloat(dims.width))  + '' : '—';
-  const displayHeight = dims?.height ? Math.round(parseFloat(dims.height)) + '' : '—';
+  const displayWidth  = formatDimension(dims?.width);
+  const displayHeight = formatDimension(dims?.height);
   const rc = parseCorners(radius);
 
   const [pTop,    setPTop]    = useState(pad.top    || '0');
