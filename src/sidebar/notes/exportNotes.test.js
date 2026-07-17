@@ -126,6 +126,18 @@ describe('formatRecord — degradation markers & theme', () => {
                  … (cycle)`);
   });
 
+  it('marks a truncated (depth-capped) chain, keeping a real source', () => {
+    const rec = { selector: 'a', comment: '', edits: [{ property: 'color', before: 'x', after: 'y' }],
+      context: { chains: { color: { declared: 'var(--a)', via: '.a', computed: 'y',
+        hops: [{ name: '--a', value: 'var(--b)', source: S('theme.css', 42) }], root: null, truncated: true, cyclic: false } } } };
+    expect(formatRecord(rec, 1)).toBe(
+`## [1] a
+    color: x → y
+      declared:  var(--a)  via .a
+      chain:     --a = var(--b)  theme.css:42
+                 … (chain depth capped)`);
+  });
+
   it('emits a per-record theme line only when it differs from the page', () => {
     const rec = { selector: 'button', comment: '', edits: [{ property: 'color', before: 'x', after: 'y' }],
       context: { theme: { mode: 'dark', method: 'carrier:.dark', carrier: '.dark', carrierSelector: 'div.preview' } } };
@@ -134,6 +146,57 @@ describe('formatRecord — degradation markers & theme', () => {
     theme:  dark  (via .dark on div.preview)
     color: x → y`);
     expect(formatRecord(rec, 1, 'dark')).toBe('## [1] button\n    color: x → y'); // agrees → silent
+  });
+});
+
+describe('formatRecord — layout & children edge cases', () => {
+  it('composes a grid layout line from all four grid descriptors', () => {
+    const rec = {
+      selector: 'div.grid', comment: 'switch to grid', edits: [],
+      context: {
+        layout: { display: 'grid', flexDirection: null, gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto', gap: '12px' },
+        children: { count: 4, signature: 'div.card' }, bbox: { w: 640, h: 320, x: 0, y: 96 }, chains: {},
+      },
+    };
+    expect(formatRecord(rec, 4)).toBe(
+`## [4] div.grid
+    Comment: "switch to grid"
+      layout:    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto; gap:12px
+      children:  4 × div.card
+      bbox:      640×320 @ (0,96)`);
+  });
+
+  it('falls back to a bare count when children have no common signature', () => {
+    const rec = {
+      selector: 'div.mixed', comment: 'multiple different tags', edits: [],
+      context: {
+        layout: { display: 'flex', flexDirection: 'row', gridTemplateColumns: null, gridTemplateRows: null, gap: null },
+        children: { count: 2, signature: null }, bbox: { w: 100, h: 50, x: 10, y: 20 }, chains: {},
+      },
+    };
+    expect(formatRecord(rec, 5)).toBe(
+`## [5] div.mixed
+    Comment: "multiple different tags"
+      layout:    display:flex; flex-direction:row
+      children:  2
+      bbox:      100×50 @ (10,20)`);
+  });
+
+  it('omits the children line entirely when count is zero', () => {
+    const rec = {
+      selector: 'div.empty', comment: 'no kids here', edits: [],
+      context: {
+        layout: { display: 'flex', flexDirection: 'row', gridTemplateColumns: null, gridTemplateRows: null, gap: null },
+        children: { count: 0, signature: null }, bbox: { w: 40, h: 40, x: 0, y: 0 }, chains: {},
+      },
+    };
+    const out = formatRecord(rec, 6);
+    expect(out).not.toContain('children:');
+    expect(out).toBe(
+`## [6] div.empty
+    Comment: "no kids here"
+      layout:    display:flex; flex-direction:row
+      bbox:      40×40 @ (0,0)`);
   });
 });
 
