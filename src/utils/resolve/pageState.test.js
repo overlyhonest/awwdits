@@ -1,6 +1,6 @@
 // src/utils/resolve/pageState.test.js
 import { describe, it, expect } from 'vitest';
-import { detectThemeFromChain, pageHeader } from './pageState.js';
+import { detectThemeFromChain, pageHeader, sheetsHavePrefersColorScheme } from './pageState.js';
 
 const node = (selector, classList = [], attrs = {}) => ({ selector, classList, attrs });
 
@@ -33,6 +33,43 @@ describe('detectThemeFromChain', () => {
     const r = detectThemeFromChain(chain, { prefersDark: true, hasMediaRule: true });
     expect(r.mode).toBe('light');
     expect(r.method).toBe('carrier:.light');
+  });
+
+  it('prefers the nearest carrier when a farther carrier conflicts (nearest-wins, not carrier-order)', () => {
+    // Near element carries .light; a farther ancestor carries the opposite, .dark.
+    // Walking the chain nearest-first must stop at the first (nearest) match.
+    const chain = [node('div.card', ['light']), node('section.page', ['dark'])];
+    const r = detectThemeFromChain(chain, { prefersDark: true, hasMediaRule: true });
+    expect(r.mode).toBe('light');
+    expect(r.method).toBe('carrier:.light');
+    expect(r.carrierSelector).toBe('div.card');
+  });
+});
+
+describe('sheetsHavePrefersColorScheme', () => {
+  it('returns true when a media rule\'s media.mediaText includes prefers-color-scheme', () => {
+    const sheets = [
+      { cssRules: [{ media: { mediaText: '(prefers-color-scheme: dark)' } }] },
+    ];
+    expect(sheetsHavePrefersColorScheme(sheets)).toBe(true);
+  });
+
+  it('returns false when rules exist but none reference prefers-color-scheme', () => {
+    const sheets = [
+      { cssRules: [
+        { selectorText: '.foo' }, // plain style rule, no `media` at all
+        { media: { mediaText: '(min-width: 600px)' } }, // media rule, non-matching
+      ] },
+    ];
+    expect(sheetsHavePrefersColorScheme(sheets)).toBe(false);
+  });
+
+  it('swallows a cross-origin cssRules access error and returns false', () => {
+    const sheets = [
+      { get cssRules() { throw new Error('x-origin'); } },
+    ];
+    expect(() => sheetsHavePrefersColorScheme(sheets)).not.toThrow();
+    expect(sheetsHavePrefersColorScheme(sheets)).toBe(false);
   });
 });
 
