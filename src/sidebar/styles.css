@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fonts are vendored and served from the extension (see public/fonts/README.md) — the
+   panel and the page-side overlays must render a glyph identically, and neither should
+   depend on a third-party request. This iframe is extension-origin, so relative URLs
+   resolve without chrome.runtime.getURL. JetBrains Mono is variable: one file, 400-700. */
+@font-face {
+  font-family: 'Special Gothic Expanded One';
+  src: url('/fonts/special-gothic-expanded-one-latin.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Special Gothic';
+  src: url('/fonts/special-gothic-latin.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+
 /* Design tokens (dark-only, on :root) live in tokens.css, imported before this
    file in main.jsx. */
 
