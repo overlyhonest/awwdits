@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { upsertEdit, setComment, clearEdits, removeEmpty, sortRecords, recordKey, setScope } from './recordOps.js';
+import { upsertEdit, setComment, clearEdits, removeEmpty, recordKey, setScope } from './recordOps.js';
 import { mergeContext } from './recordOps.js';
 
 const base = { selector: 'button.cta', path: [{ tag: 'button', index: 0 }], label: 'button.cta' };
@@ -31,7 +31,7 @@ describe('upsertEdit', () => {
   });
 });
 
-describe('setComment / clearEdits / removeEmpty / sortRecords', () => {
+describe('setComment / clearEdits / removeEmpty', () => {
   it('setComment creates a record and stores text', () => {
     const r = setComment([], base, 'too tight', 5);
     expect(r[0].comment).toBe('too tight');
@@ -57,10 +57,6 @@ describe('setComment / clearEdits / removeEmpty / sortRecords', () => {
     expect(r.map(x => x.selector)).toEqual(['b']);
   });
 
-  it('sortRecords orders by updatedAt descending', () => {
-    const r = sortRecords([{ updatedAt: 1 }, { updatedAt: 3 }, { updatedAt: 2 }]);
-    expect(r.map(x => x.updatedAt)).toEqual([3, 2, 1]);
-  });
 });
 
 describe('context capture', () => {

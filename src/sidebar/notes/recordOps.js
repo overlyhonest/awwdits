@@ -91,7 +91,3 @@ export function removeRecord(records, key) {
 export function removeEmpty(records) {
   return records.filter(r => (r.comment && r.comment.trim()) || (r.edits || []).length > 0);
 }
-
-export function sortRecords(records) {
-  return [...records].sort((a, b) => b.updatedAt - a.updatedAt);
-}

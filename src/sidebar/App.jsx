@@ -3,7 +3,7 @@ import { MESSAGES } from '../utils/constants.js';
 import InspectZone from './components/Inspect/InspectZone.jsx';
 import { FONT, COLOR } from './components/redesign/tokens.js';
 import { IconGripVertical, IconPencil, IconCheck, IconMessage, IconCaretRight, XIcon } from './components/redesign/icons.jsx';
-import { upsertEdit, setComment as setCommentOp, clearEdits, removeEmpty, findRecord, sortRecords, removeEdit, removeRecord, recordKey, setScope } from './notes/recordOps.js';
+import { upsertEdit, setComment as setCommentOp, clearEdits, removeEmpty, findRecord, removeEdit, removeRecord, recordKey, setScope } from './notes/recordOps.js';
 import { loadNotes, saveNotes } from './notes/notesStorage.js';
 
 function App() {
@@ -104,7 +104,10 @@ function App() {
   // the mount-time empty snapshot doesn't post a 0→N flicker before notes load.
   useEffect(() => {
     if (!pageUrl || hydratedUrlRef.current !== pageUrl) return;
-    const shown = sortRecords(removeEmpty(notes));
+    // Creation order (records are appended on first touch, never reordered) so the export
+    // numbers them stably: the first annotation is always [1]. NOT recency-sorted, which
+    // made the newest jump to [1].
+    const shown = removeEmpty(notes);
     postToContent(MESSAGES.RENDER_COMMENTS, {
       comments: shown
         .filter(n => n.comment && n.comment.trim())
