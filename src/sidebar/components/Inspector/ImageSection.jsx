@@ -12,6 +12,14 @@ function formatBytes(b) {
 
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? Math.round(n) : null; };
 
+// Guarded: encodeURIComponent throws a URIError on a lone UTF-16 surrogate, which arbitrary
+// page markup can contain — degrade to no preview rather than crash the render.
+function svgDataUri(markup) {
+  if (!markup) return null;
+  try { return `data:image/svg+xml;utf8,${encodeURIComponent(markup)}`; }
+  catch { return null; }
+}
+
 // A stacked property: muted label over a bright value (per the Figma image design).
 function Prop({ label, value }) {
   return (
@@ -33,8 +41,7 @@ function ImageSection({ image }) {
   const src = image?.src || image?.url || null;
   // A previewable source for EVERY visual type: url (img/bg) · dataUrl (canvas) · poster
   // (video) · serialized markup as a data URI (inline svg).
-  const svgUri = image?.markup ? `data:image/svg+xml;utf8,${encodeURIComponent(image.markup)}` : null;
-  const previewSrc = src || image?.dataUrl || image?.poster || svgUri || null;
+  const previewSrc = src || image?.dataUrl || image?.poster || svgDataUri(image?.markup) || null;
 
   // Reset the load-error flag whenever the previewed source changes (any type).
   useEffect(() => { setPreviewError(false); }, [previewSrc]);

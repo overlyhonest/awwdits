@@ -126,7 +126,9 @@ function extractImageData(element, tag, computed) {
     try {
       let s = element.outerHTML;
       if (computed.color && s.includes('currentColor')) s = s.split('currentColor').join(computed.color);
-      if (!/\bxmlns=/.test(s)) s = s.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+      // Check only the opening <svg …> tag — a nested foreignObject can carry its own xmlns.
+      const head = s.slice(0, s.indexOf('>') + 1);
+      if (head && !/\bxmlns=/.test(head)) s = s.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
       markup = s;
     } catch { /* serialization blocked — no preview */ }
     return {
@@ -150,7 +152,7 @@ function extractImageData(element, tag, computed) {
     // taint). `videoSrc` is info only — NOT `src`, which the preview would treat as an image.
     return {
       type: 'video',
-      poster: element.getAttribute('poster') || '',
+      poster: element.poster || element.getAttribute('poster') || '',
       videoSrc: element.currentSrc || element.src || '',
       renderedWidth: computed.width,
       renderedHeight: computed.height,
