@@ -45,27 +45,31 @@ function InspectorPanel({ data }) {
 
   const { styles, contrast } = data;
 
-  // Relevance: an image is a leaf visual — its own Image block + layout/border/effects
-  // matter, but typography, text color, and background do not, so they're hidden.
+  // Relevance: an image is a leaf visual — only its own Image block (with a preview) and
+  // Effects matter. The box model (Layout / padding), border, typography, text color, and
+  // background are all irrelevant to a leaf image, so they're hidden for it.
   const isImage = !!styles?.image;
+  const showLayout = !isImage;
   const showColors = !isImage && hasRelevantColors(styles?.colors);
   const showImage = isImage;
   const showTypography = !isImage && !!styles?.typography;
   const showBackground = !isImage && hasRelevantBackground(styles?.background);
-  const showBorder = hasRelevantBorder(styles?.border);
+  const showBorder = !isImage && hasRelevantBorder(styles?.border);
   const showEffects = hasRelevantEffects(styles?.effects);
-  const showCssVars = styles?.cssVariables?.length > 0;
+  const showCssVars = !isImage && styles?.cssVariables?.length > 0;
 
   return (
     <div>
       {/* Focal summary — selector, stray count, and dimensions as the hero */}
       <ElementSummary styles={styles} />
 
-      {/* Layout */}
-      <div style={{ borderBottom: `1px solid ${COLOR.border}` }}>
-        <SectionHeader>Layout</SectionHeader>
-        <SpacingSection styles={styles} />
-      </div>
+      {/* Layout — hidden for images (the box model is irrelevant to a leaf image) */}
+      {showLayout && (
+        <div style={{ borderBottom: `1px solid ${COLOR.border}` }}>
+          <SectionHeader>Layout</SectionHeader>
+          <SpacingSection styles={styles} />
+        </div>
+      )}
 
       {/* Typography */}
       {showTypography && (

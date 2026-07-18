@@ -28,12 +28,14 @@ function Prop({ label, value }) {
 
 function ImageSection({ image }) {
   const [fileSize, setFileSize] = useState(null);
+  const [previewError, setPreviewError] = useState(false);
   const src = image?.src || image?.url || null;
 
   // Best-effort byte size — CORS may block; aborted on src change so rapid switching
   // doesn't leave stale full-image downloads in flight.
   useEffect(() => {
     setFileSize(null);
+    setPreviewError(false);
     if (!src) return;
     const ctrl = new AbortController();
     fetch(src, { signal: ctrl.signal })
@@ -57,6 +59,36 @@ function ImageSection({ image }) {
 
   return (
     <div style={{ padding: '2px 16px 16px' }}>
+      {/* Preview — checkerboard behind it so transparency reads. Hidden when there's no
+          resolvable src (inline <svg>) or the image fails to load (CORS / broken URL). */}
+      {src && !previewError && (
+        <div style={{
+          marginBottom: 14,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          maxHeight: 200,
+          borderRadius: 8,
+          overflow: 'hidden',
+          border: `1px solid ${COLOR.border}`,
+          backgroundColor: COLOR.surface,
+          backgroundImage:
+            'linear-gradient(45deg, rgba(255,255,255,0.06) 25%, transparent 25%),' +
+            'linear-gradient(-45deg, rgba(255,255,255,0.06) 25%, transparent 25%),' +
+            'linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.06) 75%),' +
+            'linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.06) 75%)',
+          backgroundSize: '16px 16px',
+          backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+        }}>
+          <img
+            src={src}
+            alt={image.alt || ''}
+            onError={() => setPreviewError(true)}
+            style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }}
+          />
+        </div>
+      )}
+
       {fileSize != null && <Prop label="File size" value={formatBytes(fileSize)} />}
       {dimensions && <Prop label="Dimensions" value={dimensions} />}
       {isBg && image.backgroundSize && <Prop label="Size" value={image.backgroundSize} />}
