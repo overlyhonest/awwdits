@@ -251,15 +251,23 @@ describe('formatRecord — locator', () => {
 });
 
 describe('formatAll', () => {
-  it('prepends the header and numbers records', () => {
+  it('prepends an explanatory preamble and numbers records', () => {
     const out = formatAll(
       [{ selector: 'a', comment: 'x', edits: [] }, { selector: 'b', comment: 'y', edits: [] }],
-      { header: '# awwdits · http://x/ · 2026-07-17', mode: null });
+      { url: 'http://x/', mode: null, date: '2026-07-17' });
     expect(out).toBe(
-      'Apply these 2 UI review notes. In each block the Comment or the edit (`prop: before → after`) is the change to make; selector / text / hook only locate the element — treat them as context, not requirements.'
-      + '\n\n# awwdits · http://x/ · 2026-07-17\n\n## [1] a\n    Comment: "x"\n\n## [2] b\n    Comment: "y"');
+      'Design-review feedback from the awwdits browser extension — 2 notes on http://x/ (2026-07-17).'
+      + '\n\nEach block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make.'
+      + '\n\n## [1] a\n    Comment: "x"\n\n## [2] b\n    Comment: "y"');
   });
-  it('omits the header when pageState is null', () => {
+  it('folds theme + date into the preamble context when the mode is known', () => {
+    const out = formatAll(
+      [{ selector: 'a', comment: 'x', edits: [] }],
+      { url: 'http://x/', mode: 'light', date: '2026-07-17' });
+    expect(out.split('\n')[0])
+      .toBe('Design-review feedback from the awwdits browser extension — 1 note on http://x/ (light theme, 2026-07-17).');
+  });
+  it('omits the preamble when pageState is null', () => {
     const out = formatAll([{ selector: 'a', comment: 'x', edits: [] }]);
     expect(out).toBe('## [1] a\n    Comment: "x"');
   });
