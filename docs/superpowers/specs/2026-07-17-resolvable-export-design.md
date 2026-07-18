@@ -2,6 +2,26 @@
 
 **Status:** approved for planning · **Date:** 2026-07-17 · **Branch:** `resolvable-export`
 
+## Revisions after live testing (2026-07-18)
+
+Running Phase 1 against a real Vite + Tailwind + tokens app surfaced three changes:
+
+1. **Comments are located, not resolved (reverses the Q4 decision).** awwdits' job on a
+   commented element is to make it unambiguously *locatable* by the LLM (selector, layout,
+   children, bbox, theme) — resolving the CSS is the LLM's job. The var-backed paint chains
+   we added to comments (`background-color`/`color`/`border-color`) are **removed**. Comments
+   emit location context only; no `declared:`/`chain:` blocks. **Edits still resolve** — an
+   edit is a concrete value the LLM must apply at the source, which is the original problem.
+2. **Var-based shorthand fallback for edits.** The CSSOM does not expand a `var()`-containing
+   shorthand (`border-radius: var(--radius-md)`) into its longhands, so resolving an edit
+   recorded as corner longhands (`border-top-left-radius`, …) found nothing. `matchedDeclaration`
+   now falls back to the shorthand (`border-radius`, `margin`, `padding`, `border-width`,
+   `inset`) when the longhand isn't var-backed. Without this the flagship radius case is empty.
+3. **Page mode from the outermost carrier.** Theme carriers commonly sit on a wrapper `div`
+   (`[data-mode=light]` on `div.chrome`), not `<html>`. Page-level detection now finds the
+   outermost carrier in the document, so the header shows the mode and per-record `theme:`
+   lines appear only when an element is under a *different* carrier (the nested-preview case).
+
 ## Summary
 
 Today the export emits leaf values: `border-top-right-radius: 7.375px → 20px`. On a
