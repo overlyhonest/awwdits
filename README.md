@@ -6,7 +6,8 @@ developer or an LLM as structured text.
 ![Awwdits inspecting a live page](docs/images/hero.png)
 
 "The padding is off here" is not actionable. Awwdits turns review into what a developer or
-a coding agent can use directly: which element, what is wrong, and the exact CSS change.
+a coding agent can use directly: which element (down to its component and source file), what
+is wrong, and, for edits, the change resolved to the token and line you'd edit.
 
 ## Install
 
@@ -40,30 +41,46 @@ Hold `X` and click two elements to measure the gap between them. Awwdits draws b
 elements' dimensions and the distance between them, the way Chrome's inspector does. A
 third click starts over.
 
-Select an image, either an `<img>` or a CSS background, and the panel adds its dimensions,
-its file size where the host allows reading it, and a one-click Download Asset.
+Select any visual: an `<img>`, a CSS background, an inline `<svg>`, a `<canvas>`, or a
+`<video>`. The panel shows a preview plus its dimensions, and (for hosted assets) its file
+size and a one-click Download Asset.
 
 ## What you hand off
 
-Copy from the changes popover:
+Copy from the changes popover. Every note leads with what you need to *find* the element,
+and every edit resolves back to what you'd *change* in source:
 
 ```
-## h3.pricing-card__title
-Comment: "This is competing with the price for attention"
-Changes:
-  - font-size: 24px → 18px
-  - font-weight: 700 → 500
-  - color: #FFFFFF → #A1A1AA
+Design-review feedback from the awwdits browser extension. 2 notes on http://localhost:5173/ (light theme, 2026-07-18).
 
-## a.pricing-card__cta
-Comment: "Needs more room to breathe"
-Changes:
-  - padding: 8px 16px → 12px 24px
+Each block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it (context, not requirements). The `Comment:` or the `prop: before → after` edit is the change to make. Apply each to that one element unless a `scope:` line says all similar elements.
+
+## [1] button.inline-flex.items-center.justify-center
+    comp:   Button → button.tsx:8
+    text:   "View report"
+    border-radius: 7.375px → 20px  (4 corners)
+      declared:  var(--radius-md)  via .rounded-md
+      chain:     --radius-md = calc(var(--radius) - 2px)  theme.css:109
+                 --radius = 0.625rem  theme.css:33
+
+## [2] div.bg-card.text-card-foreground.flex
+    comp:   Card → card.tsx:12
+    text:   "Starter $9/mo …"
+    scope:  all similar elements
+    Comment: "increase the radius on these cards"
+      layout:    display:flex; flex-direction:column
 ```
 
-Paste that into a ticket, a PR, or an LLM. Selectors are class-based on purpose: awwdits
-knows each element's positional path but leaves it out, since positional paths break the
-moment a sibling moves.
+Paste that into a ticket, a PR, or an LLM. Each block **locates** the element: its React
+component and source file (`Button → button.tsx:8`), a text snippet, and a stable hook
+(`data-testid` / `id` / `aria-label` / `data-slot`), so a person or an agent jumps straight to
+it. Each **edit resolves to source**: a token-backed value follows its `var()` chain down to
+the file and line you'd actually edit, instead of a leaf pixel that appears nowhere in the
+code (`theme.css:109` on a Vite dev server; the filename alone on a production build).
+**Comments locate but don't resolve**: they carry layout context and leave interpreting the
+CSS to the reader. A **`scope:`** line marks whether a note applies to one element or all like
+it. Everything degrades: no design tokens, no framework, or plain HTML falls back to the class
+selector and the plain before to after.
 
 ![The changes popover](docs/images/changes.png)
 

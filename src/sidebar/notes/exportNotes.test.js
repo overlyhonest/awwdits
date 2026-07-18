@@ -281,8 +281,8 @@ describe('formatAll', () => {
       [{ selector: 'a', comment: 'x', edits: [] }, { selector: 'b', comment: 'y', edits: [] }],
       { url: 'http://x/', mode: null, date: '2026-07-17' });
     expect(out).toBe(
-      'Design-review feedback from the awwdits browser extension — 2 notes on http://x/ (2026-07-17).'
-      + '\n\nEach block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make. Apply each to that one element unless a `scope:` line says all similar elements.'
+      'Design-review feedback from the awwdits browser extension. 2 notes on http://x/ (2026-07-17).'
+      + '\n\nEach block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it (context, not requirements). The `Comment:` or the `prop: before → after` edit is the change to make. Apply each to that one element unless a `scope:` line says all similar elements.'
       + '\n\n## [1] a\n    Comment: "x"\n\n## [2] b\n    Comment: "y"');
   });
   it('folds theme + date into the preamble context when the mode is known', () => {
@@ -290,7 +290,7 @@ describe('formatAll', () => {
       [{ selector: 'a', comment: 'x', edits: [] }],
       { url: 'http://x/', mode: 'light', date: '2026-07-17' });
     expect(out.split('\n')[0])
-      .toBe('Design-review feedback from the awwdits browser extension — 1 note on http://x/ (light theme, 2026-07-17).');
+      .toBe('Design-review feedback from the awwdits browser extension. 1 note on http://x/ (light theme, 2026-07-17).');
   });
   it('omits the preamble when pageState is null', () => {
     const out = formatAll([{ selector: 'a', comment: 'x', edits: [] }]);

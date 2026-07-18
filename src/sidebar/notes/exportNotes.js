@@ -22,9 +22,9 @@ function preamble(n, { url, mode, date }) {
   const ctx = bits.length ? ` (${bits.join(', ')})` : '';
   const where = url ? ` on ${url}${ctx}` : '';
   const s = n === 1 ? '' : 's';
-  return `Design-review feedback from the awwdits browser extension — ${n} note${s}${where}.\n\n`
+  return `Design-review feedback from the awwdits browser extension. ${n} note${s}${where}.\n\n`
     + 'Each block below is one element on the page. The heading, `text:`, and `hook:` lines only '
-    + 'locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the '
+    + 'locate it (context, not requirements). The `Comment:` or the `prop: before → after` edit is the '
     + 'change to make. Apply each to that one element unless a `scope:` line says all similar elements.';
 }
 
