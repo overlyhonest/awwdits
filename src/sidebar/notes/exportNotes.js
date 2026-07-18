@@ -59,8 +59,7 @@ export function formatLayout(l) {
   if (l.flexDirection) parts.push(`flex-direction:${l.flexDirection}`);
   if (l.gridTemplateColumns) parts.push(`grid-template-columns:${l.gridTemplateColumns}`);
   if (l.gridTemplateRows) parts.push(`grid-template-rows:${l.gridTemplateRows}`);
-  if (l.gap) parts.push(`gap:${l.gap}`);
-  return parts.join('; ');
+  return parts.join('; ');   // gap intentionally omitted — a sub-pixel number reads as a fake target
 }
 
 function formatEdits(edits, chains) {
