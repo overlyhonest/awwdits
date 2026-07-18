@@ -1,6 +1,6 @@
 {
   "name": "awwdits",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Share design review with devs and LLMs",
   "license": "GPL-3.0-or-later",
   "scripts": {
