@@ -152,16 +152,23 @@ function row(rec) {
   // onSetScope; the popover rebuilds from storage on next open.
   const scope = document.createElement('button'); scope.type = 'button';
   let cur = rec.scope === 'similar' ? 'similar' : 'element';
+  let hovering = false;
   const scopeLabel = () => (cur === 'similar' ? 'all similar' : 'this element');
   scope.textContent = scopeLabel();
-  scope.title = 'Apply to this element only, or all similar elements';
+  scope.title = 'Click to toggle: apply to this element only, or all similar elements';
   scope.style.cssText = `font:${SIZE.sm} ${FONT.mono};border:1px solid ${COLORS.border};border-radius:6px;` +
     'padding:1px 7px;cursor:pointer;flex:none;white-space:nowrap;transition:background .12s,color .12s';
+  // At rest, a filled pill for 'all similar', a bordered (label-colour) pill for 'this
+  // element' — bordered + label-weight so it reads as a control, not static text. On hover
+  // the surface lifts (matching the popover's other buttons), making it clearly clickable.
   const paintScope = () => {
-    scope.style.color = cur === 'similar' ? COLORS.fg : COLORS.weak;
-    scope.style.background = cur === 'similar' ? COLORS.active : 'transparent';
+    const active = cur === 'similar';
+    scope.style.color = (active || hovering) ? COLORS.fg : COLORS.label;
+    scope.style.background = active ? COLORS.active : (hovering ? COLORS.hover : 'transparent');
   };
   paintScope();
+  scope.addEventListener('mouseenter', () => { hovering = true; paintScope(); });
+  scope.addEventListener('mouseleave', () => { hovering = false; paintScope(); });
   scope.addEventListener('click', (e) => {
     e.stopPropagation();
     cur = cur === 'similar' ? 'element' : 'similar';
