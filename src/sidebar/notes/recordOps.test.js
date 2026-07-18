@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { upsertEdit, setComment, clearEdits, removeEmpty, sortRecords, recordKey } from './recordOps.js';
+import { upsertEdit, setComment, clearEdits, removeEmpty, sortRecords, recordKey, setScope } from './recordOps.js';
 import { mergeContext } from './recordOps.js';
 
 const base = { selector: 'button.cta', path: [{ tag: 'button', index: 0 }], label: 'button.cta' };
@@ -94,5 +94,26 @@ describe('context capture', () => {
     const locator = { text: 'Starter $9/mo', bbox: { w: 320, h: 445, x: 464, y: 139 }, matchCount: 1 };
     const out = mergeContext(existing, { chains: {}, locator });
     expect(out.locator).toEqual(locator);
+  });
+});
+
+describe('setScope', () => {
+  const base = { selector: 'button.cta', path: [{ tag: 'button', index: 0 }], label: 'button.cta' };
+
+  it('sets scope on the keyed record without touching others or recency', () => {
+    let r = upsertEdit([], { ...base, property: 'padding', before: '1px', after: '2px' }, 1);
+    r = upsertEdit(r, { selector: 'a.other', path: [{ tag: 'a', index: 0 }], property: 'color', before: 'x', after: 'y' }, 1);
+    r = setScope(r, recordKey(base), 'similar');
+    const hit = r.find(x => recordKey(x) === recordKey(base));
+    const other = r.find(x => x.selector === 'a.other');
+    expect(hit.scope).toBe('similar');
+    expect(hit.updatedAt).toBe(1);   // recency unchanged — a scope tag isn't a new edit
+    expect(other.scope).toBeUndefined();
+  });
+
+  it('does not mutate the input array', () => {
+    const input = upsertEdit([], { ...base, property: 'padding', before: '1px', after: '2px' }, 1);
+    setScope(input, recordKey(base), 'similar');
+    expect(input[0].scope).toBeUndefined();
   });
 });

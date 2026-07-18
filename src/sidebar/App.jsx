@@ -3,7 +3,7 @@ import { MESSAGES } from '../utils/constants.js';
 import InspectZone from './components/Inspect/InspectZone.jsx';
 import { FONT, COLOR } from './components/redesign/tokens.js';
 import { IconGripVertical, IconPencil, IconCheck, IconMessage, IconCaretRight, XIcon } from './components/redesign/icons.jsx';
-import { upsertEdit, setComment as setCommentOp, clearEdits, removeEmpty, findRecord, sortRecords, removeEdit, removeRecord, recordKey } from './notes/recordOps.js';
+import { upsertEdit, setComment as setCommentOp, clearEdits, removeEmpty, findRecord, sortRecords, removeEdit, removeRecord, recordKey, setScope } from './notes/recordOps.js';
 import { loadNotes, saveNotes } from './notes/notesStorage.js';
 
 function App() {
@@ -79,6 +79,9 @@ function App() {
           break;
         case MESSAGES.DELETE_COMMENT:
           setNotes(prev => removeEmpty(setCommentOp(prev, { selector: e.data.data.selector, path: e.data.data.path, label: e.data.data.selector }, '')));
+          break;
+        case MESSAGES.SET_SCOPE:
+          setNotes(prev => setScope(prev, recordKey(e.data.data), e.data.data.scope));
           break;
       }
     }

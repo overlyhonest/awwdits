@@ -282,7 +282,7 @@ describe('formatAll', () => {
       { url: 'http://x/', mode: null, date: '2026-07-17' });
     expect(out).toBe(
       'Design-review feedback from the awwdits browser extension — 2 notes on http://x/ (2026-07-17).'
-      + '\n\nEach block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make.'
+      + '\n\nEach block below is one element on the page. The heading, `text:`, and `hook:` lines only locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make. Apply each to that one element unless a `scope:` line says all similar elements.'
       + '\n\n## [1] a\n    Comment: "x"\n\n## [2] b\n    Comment: "y"');
   });
   it('folds theme + date into the preamble context when the mode is known', () => {
@@ -295,5 +295,18 @@ describe('formatAll', () => {
   it('omits the preamble when pageState is null', () => {
     const out = formatAll([{ selector: 'a', comment: 'x', edits: [] }]);
     expect(out).toBe('## [1] a\n    Comment: "x"');
+  });
+});
+
+describe('formatRecord — scope', () => {
+  it('emits a scope line only when the record is marked all-similar', () => {
+    const rec = { selector: 'button.x', comment: '', scope: 'similar',
+      edits: [{ property: 'color', before: 'a', after: 'b' }] };
+    expect(formatRecord(rec, 1)).toBe('## [1] button.x\n    scope:  all similar elements\n    color: a → b');
+  });
+  it('omits the scope line for the default (this element)', () => {
+    const rec = { selector: 'button.x', comment: '',
+      edits: [{ property: 'color', before: 'a', after: 'b' }] };
+    expect(formatRecord(rec, 1)).toBe('## [1] button.x\n    color: a → b');
   });
 });

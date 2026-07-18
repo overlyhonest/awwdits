@@ -117,6 +117,7 @@ function injectSidebar() {
     onDeleteRecord: (rec) => postToSidebar(MESSAGES.DELETE_RECORD, { selector: rec.selector, path: rec.path }),
     onDeleteEdit: (rec, property) => postToSidebar(MESSAGES.DELETE_EDIT, { selector: rec.selector, path: rec.path, property }),
     onDeleteComment: (rec) => postToSidebar(MESSAGES.DELETE_COMMENT, { selector: rec.selector, path: rec.path }),
+    onSetScope: (rec, scope) => postToSidebar(MESSAGES.SET_SCOPE, { selector: rec.selector, path: rec.path, scope }),
   });
 
   window.addEventListener('message', handleSidebarMessage);

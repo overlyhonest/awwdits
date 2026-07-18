@@ -69,6 +69,14 @@ export function clearEdits(records, key, now = Date.now()) {
   return records.map(r => (recordKey(r) === key ? { ...r, edits: [], updatedAt: now } : r));
 }
 
+// Scope of an annotation: 'element' (default, this one only) or 'similar' (all like it).
+// Stored only when the user marks it; absent means 'element'. Deliberately does NOT bump
+// updatedAt — a scope tag isn't a new edit, so it shouldn't reorder the recency-sorted list
+// (which would make the toggled row jump out from under the cursor).
+export function setScope(records, key, scope) {
+  return records.map(r => (recordKey(r) === key ? { ...r, scope } : r));
+}
+
 // Delete a single edit (one property) from a record.
 export function removeEdit(records, key, property, now = Date.now()) {
   return records.map(r =>
