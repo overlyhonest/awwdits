@@ -75,13 +75,13 @@ describe('sheetsHavePrefersColorScheme', () => {
 
 describe('pageHeader', () => {
   it('includes the mode segment when theme is present', () => {
-    const h = pageHeader({ url: 'http://localhost:5173/', viewport: { w: 1440, h: 900 }, date: '2026-07-17',
+    const h = pageHeader({ url: 'http://localhost:5173/', date: '2026-07-17',
       theme: { mode: 'light', method: 'prefers-color-scheme' } });
-    expect(h).toBe('# awwdits · http://localhost:5173/ · light mode (prefers-color-scheme) · 1440×900 · 2026-07-17');
+    expect(h).toBe('# awwdits · http://localhost:5173/ · light mode (prefers-color-scheme) · 2026-07-17');
   });
 
   it('omits the mode segment entirely when theme is null', () => {
-    const h = pageHeader({ url: 'http://x/', viewport: { w: 800, h: 600 }, date: '2026-07-17', theme: null });
-    expect(h).toBe('# awwdits · http://x/ · 800×600 · 2026-07-17');
+    const h = pageHeader({ url: 'http://x/', date: '2026-07-17', theme: null });
+    expect(h).toBe('# awwdits · http://x/ · 2026-07-17');
   });
 });
