@@ -100,20 +100,20 @@ describe('context capture', () => {
 describe('setScope', () => {
   const base = { selector: 'button.cta', path: [{ tag: 'button', index: 0 }], label: 'button.cta' };
 
-  it('sets scope on the keyed record without touching others', () => {
+  it('sets scope on the keyed record without touching others or recency', () => {
     let r = upsertEdit([], { ...base, property: 'padding', before: '1px', after: '2px' }, 1);
     r = upsertEdit(r, { selector: 'a.other', path: [{ tag: 'a', index: 0 }], property: 'color', before: 'x', after: 'y' }, 1);
-    r = setScope(r, recordKey(base), 'similar', 2);
+    r = setScope(r, recordKey(base), 'similar');
     const hit = r.find(x => recordKey(x) === recordKey(base));
     const other = r.find(x => x.selector === 'a.other');
     expect(hit.scope).toBe('similar');
-    expect(hit.updatedAt).toBe(2);
+    expect(hit.updatedAt).toBe(1);   // recency unchanged — a scope tag isn't a new edit
     expect(other.scope).toBeUndefined();
   });
 
   it('does not mutate the input array', () => {
     const input = upsertEdit([], { ...base, property: 'padding', before: '1px', after: '2px' }, 1);
-    setScope(input, recordKey(base), 'similar', 2);
+    setScope(input, recordKey(base), 'similar');
     expect(input[0].scope).toBeUndefined();
   });
 });
