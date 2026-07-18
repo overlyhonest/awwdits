@@ -5,6 +5,7 @@
 import { resolveChain } from './varChain.js';
 import { matchedDeclaration, buildLookup, rootFontSizeSource } from './cssSource.js';
 import { detectTheme } from './pageState.js';
+import { buildSelector } from '../extractors/styleExtractor.js';
 
 export function childSignature(kid) {
   const cls = (kid.classes || []).filter(c => !c.includes(':')).slice(0, 3);
@@ -37,11 +38,12 @@ export function resolveProp(el, kebabProp, { sheets = document.styleSheets } = {
 
 export function captureForEdit(el, kebabProp, { sheets = document.styleSheets } = {}) {
   const chains = {}; chains[kebabProp] = resolveProp(el, kebabProp, { sheets });
-  return { chains, theme: safeTheme(el, sheets) };
+  return { chains, theme: safeTheme(el, sheets), locator: buildLocator(el) };
 }
 
 export function captureForComment(el, { sheets = document.styleSheets } = {}) {
   const theme = safeTheme(el, sheets);
+  const locator = buildLocator(el);
   try {
     const cs = getComputedStyle(el);
     const isGrid = cs.display.includes('grid');
@@ -53,14 +55,31 @@ export function captureForComment(el, { sheets = document.styleSheets } = {}) {
       gap: (cs.gap && cs.gap !== 'normal' && cs.gap !== '0px') ? cs.gap : null,
     };
     const kids = Array.from(el.children).map(c => ({ tag: c.tagName.toLowerCase(), classes: Array.from(c.classList) }));
-    const r = el.getBoundingClientRect();
-    const bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
-    return { layout, children: summarizeChildren(kids), bbox, theme };
+    return { layout, children: summarizeChildren(kids), theme, locator };
   } catch {
-    return { theme };
+    return { theme, locator };
   }
 }
 
 function safeTheme(el, sheets) {
   try { return detectTheme(el, { sheets }) || undefined; } catch { return undefined; }
+}
+
+// Whitespace-collapsed, length-capped text snippet for a human/LLM to recognize the
+// element by. Pure — no DOM. Returns null when there's nothing meaningful to show.
+export function snippetText(raw) {
+  if (!raw) return null;
+  const t = raw.replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  return t.length > 80 ? t.slice(0, 79) + '…' : t;   // … is U+2026
+}
+
+// Locator fields to help a human/LLM find this element. matchCount > 1 means the class
+// selector is ambiguous, so the exporter emits a unique path to disambiguate.
+export function buildLocator(el, { doc = (typeof document !== 'undefined' ? document : null) } = {}) {
+  let text = null, bbox = null, matchCount = 1;
+  try { text = snippetText(el.textContent); } catch { /* ignore */ }
+  try { const r = el.getBoundingClientRect(); bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) }; } catch { /* ignore */ }
+  try { const sel = buildSelector(el); matchCount = (sel && doc) ? doc.querySelectorAll(sel).length : 1; } catch { /* ignore */ }
+  return { text, bbox, matchCount };
 }

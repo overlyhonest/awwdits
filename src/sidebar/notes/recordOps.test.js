@@ -88,4 +88,11 @@ describe('context capture', () => {
     expect(out.chains).toEqual({ a: 1, b: 2 });
     expect(out.bbox).toEqual({ w: 1 });
   });
+
+  it('mergeContext merges a locator fragment onto a record', () => {
+    const existing = { chains: { a: 1 } };
+    const locator = { text: 'Starter $9/mo', bbox: { w: 320, h: 445, x: 464, y: 139 }, matchCount: 1 };
+    const out = mergeContext(existing, { chains: {}, locator });
+    expect(out.locator).toEqual(locator);
+  });
 });

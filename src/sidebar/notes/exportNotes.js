@@ -4,6 +4,8 @@
 // (token → leaf, with sources), page/element theme, and layout context for comments.
 // Everything degrades — a record with no context renders as heading + comment + plain edits.
 // Pure: no DOM. The page-state header is passed in by the (DOM-having) caller.
+import { pathToSelector } from '../../utils/helpers/domPath.js';
+
 const CORNERS = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
 
 export function formatAll(records, pageState = null) {
@@ -14,6 +16,8 @@ export function formatAll(records, pageState = null) {
 export function formatRecord(record, index, pageMode = null) {
   const ctx = record.context || {};
   const lines = [`## [${index}] ${record.selector}`];
+
+  if (ctx.locator) lines.push(...formatLocator(ctx.locator, record.path));
 
   if (ctx.theme && ctx.theme.mode !== pageMode) {
     lines.push(`    theme:  ${ctx.theme.mode}  (via ${ctx.theme.carrier} on ${ctx.theme.carrierSelector})`);
@@ -37,7 +41,18 @@ function formatCommentContext(ctx) {
   if (ctx.children && ctx.children.count > 0) {
     out.push(`      children:  ${ctx.children.signature ? `${ctx.children.count} × ${ctx.children.signature}` : ctx.children.count}`);
   }
-  if (ctx.bbox) out.push(`      bbox:      ${ctx.bbox.w}×${ctx.bbox.h} @ (${ctx.bbox.x},${ctx.bbox.y})`);
+  return out;
+}
+
+// Locator lines sit right under the heading (before the theme line). Labels are padded to
+// 8 so values align at column 12 (same as the existing `theme:` line).
+function formatLocator(loc, path) {
+  const out = [];
+  if (loc.text) out.push(`    ${'text:'.padEnd(8)}"${loc.text}"`);
+  if (loc.bbox) out.push(`    ${'bbox:'.padEnd(8)}${loc.bbox.w}×${loc.bbox.h} @ (${loc.bbox.x},${loc.bbox.y})`);
+  if (loc.matchCount > 1 && path && path.length) {
+    out.push(`    ${'match:'.padEnd(8)}${loc.matchCount} on page · ${pathToSelector(path)}`);
+  }
   return out;
 }
 

@@ -37,7 +37,7 @@ export function findRecord(records, key) {
 export function mergeContext(existing, fragment) {
   if (!fragment) return existing;
   const next = { ...(existing || {}), chains: { ...((existing && existing.chains) || {}), ...(fragment.chains || {}) } };
-  for (const k of ['layout', 'children', 'bbox', 'theme']) {
+  for (const k of ['layout', 'children', 'bbox', 'theme', 'locator']) {
     if (fragment[k] !== undefined) next[k] = fragment[k];
   }
   return next;

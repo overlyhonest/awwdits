@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeChildren, childSignature } from './elementContext.js';
+import { summarizeChildren, childSignature, snippetText } from './elementContext.js';
 
 describe('childSignature', () => {
   it('joins up to three classes onto the tag', () => {
@@ -29,5 +29,24 @@ describe('summarizeChildren', () => {
   });
   it('reports zero children', () => {
     expect(summarizeChildren([])).toEqual({ count: 0, signature: null });
+  });
+});
+
+describe('snippetText', () => {
+  it('collapses runs of whitespace and trims', () => {
+    expect(snippetText('  Get\n  started  ')).toBe('Get started');
+  });
+
+  it('caps at 80 chars with an ellipsis', () => {
+    const raw = 'x'.repeat(100);
+    const out = snippetText(raw);
+    expect(out.length).toBe(80);
+    expect(out.endsWith('…')).toBe(true);
+  });
+
+  it('returns null for empty/whitespace/null input', () => {
+    expect(snippetText('   ')).toBeNull();
+    expect(snippetText('')).toBeNull();
+    expect(snippetText(null)).toBeNull();
   });
 });

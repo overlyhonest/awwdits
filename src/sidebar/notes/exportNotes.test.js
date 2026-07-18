@@ -77,20 +77,21 @@ describe('formatRecord — 4-corner collapse', () => {
 });
 
 describe('formatRecord — comment context (items 2 & 3)', () => {
-  it('renders layout/children/bbox for a comment (locate only, no chains)', () => {
+  it('renders layout/children for a comment, bbox as a locator (locate only, no chains)', () => {
     const rec = {
       selector: 'div.bg-card.text-card-foreground.flex', comment: 'bg can be more darker', edits: [],
       context: {
         layout: { display: 'flex', flexDirection: 'column', gridTemplateColumns: null, gridTemplateRows: null, gap: '24px' },
-        children: { count: 3, signature: 'div' }, bbox: { w: 384, h: 212, x: 64, y: 140 },
+        children: { count: 3, signature: 'div' },
+        locator: { text: null, bbox: { w: 384, h: 212, x: 64, y: 140 }, matchCount: 1 },
       },
     };
     expect(formatRecord(rec, 2)).toBe(
 `## [2] div.bg-card.text-card-foreground.flex
+    bbox:   384×212 @ (64,140)
     Comment: "bg can be more darker"
       layout:    display:flex; flex-direction:column; gap:24px
-      children:  3 × div
-      bbox:      384×212 @ (64,140)`);
+      children:  3 × div`);
   });
 
   it('renders a bare-div comment with layout only', () => {
@@ -98,15 +99,16 @@ describe('formatRecord — comment context (items 2 & 3)', () => {
       selector: 'div', comment: 'try out verical column arrangement for the colors,', edits: [],
       context: {
         layout: { display: 'flex', flexDirection: 'row', gridTemplateColumns: null, gridTemplateRows: null, gap: '8px' },
-        children: { count: 11, signature: 'div.h-8.w-8.rounded-full' }, bbox: { w: 320, h: 32, x: 612, y: 480 }, chains: {},
+        children: { count: 11, signature: 'div.h-8.w-8.rounded-full' },
+        locator: { text: null, bbox: { w: 320, h: 32, x: 612, y: 480 }, matchCount: 1 }, chains: {},
       },
     };
     expect(formatRecord(rec, 3)).toBe(
 `## [3] div
+    bbox:   320×32 @ (612,480)
     Comment: "try out verical column arrangement for the colors,"
       layout:    display:flex; flex-direction:row; gap:8px
-      children:  11 × div.h-8.w-8.rounded-full
-      bbox:      320×32 @ (612,480)`);
+      children:  11 × div.h-8.w-8.rounded-full`);
   });
 });
 
@@ -152,15 +154,16 @@ describe('formatRecord — layout & children edge cases', () => {
       selector: 'div.grid', comment: 'switch to grid', edits: [],
       context: {
         layout: { display: 'grid', flexDirection: null, gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto', gap: '12px' },
-        children: { count: 4, signature: 'div.card' }, bbox: { w: 640, h: 320, x: 0, y: 96 }, chains: {},
+        children: { count: 4, signature: 'div.card' },
+        locator: { text: null, bbox: { w: 640, h: 320, x: 0, y: 96 }, matchCount: 1 }, chains: {},
       },
     };
     expect(formatRecord(rec, 4)).toBe(
 `## [4] div.grid
+    bbox:   640×320 @ (0,96)
     Comment: "switch to grid"
       layout:    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto; gap:12px
-      children:  4 × div.card
-      bbox:      640×320 @ (0,96)`);
+      children:  4 × div.card`);
   });
 
   it('falls back to a bare count when children have no common signature', () => {
@@ -168,15 +171,16 @@ describe('formatRecord — layout & children edge cases', () => {
       selector: 'div.mixed', comment: 'multiple different tags', edits: [],
       context: {
         layout: { display: 'flex', flexDirection: 'row', gridTemplateColumns: null, gridTemplateRows: null, gap: null },
-        children: { count: 2, signature: null }, bbox: { w: 100, h: 50, x: 10, y: 20 }, chains: {},
+        children: { count: 2, signature: null },
+        locator: { text: null, bbox: { w: 100, h: 50, x: 10, y: 20 }, matchCount: 1 }, chains: {},
       },
     };
     expect(formatRecord(rec, 5)).toBe(
 `## [5] div.mixed
+    bbox:   100×50 @ (10,20)
     Comment: "multiple different tags"
       layout:    display:flex; flex-direction:row
-      children:  2
-      bbox:      100×50 @ (10,20)`);
+      children:  2`);
   });
 
   it('omits the children line entirely when count is zero', () => {
@@ -184,16 +188,46 @@ describe('formatRecord — layout & children edge cases', () => {
       selector: 'div.empty', comment: 'no kids here', edits: [],
       context: {
         layout: { display: 'flex', flexDirection: 'row', gridTemplateColumns: null, gridTemplateRows: null, gap: null },
-        children: { count: 0, signature: null }, bbox: { w: 40, h: 40, x: 0, y: 0 }, chains: {},
+        children: { count: 0, signature: null },
+        locator: { text: null, bbox: { w: 40, h: 40, x: 0, y: 0 }, matchCount: 1 }, chains: {},
       },
     };
     const out = formatRecord(rec, 6);
     expect(out).not.toContain('children:');
     expect(out).toBe(
 `## [6] div.empty
+    bbox:   40×40 @ (0,0)
     Comment: "no kids here"
-      layout:    display:flex; flex-direction:row
-      bbox:      40×40 @ (0,0)`);
+      layout:    display:flex; flex-direction:row`);
+  });
+});
+
+describe('formatRecord — locator', () => {
+  it('renders text, bbox, and a disambiguating match line when the selector is ambiguous', () => {
+    const rec = {
+      selector: 'div.bg-card', comment: '', path: [{ tag: 'div', index: 1 }, { tag: 'div', index: 0 }],
+      edits: [{ property: 'color', before: 'x', after: 'y' }],
+      context: { locator: { text: 'Starter $9/mo', bbox: { w: 320, h: 445, x: 464, y: 139 }, matchCount: 3 } },
+    };
+    expect(formatRecord(rec, 1)).toBe(
+`## [1] div.bg-card
+    text:   "Starter $9/mo"
+    bbox:   320×445 @ (464,139)
+    match:  3 on page · body > div:nth-child(2) > div:nth-child(1)
+    color: x → y`);
+  });
+
+  it('omits the match line when the selector is unique', () => {
+    const rec = {
+      selector: 'div.bg-card', comment: '', path: [{ tag: 'div', index: 1 }, { tag: 'div', index: 0 }],
+      edits: [{ property: 'color', before: 'x', after: 'y' }],
+      context: { locator: { text: 'Starter $9/mo', bbox: { w: 320, h: 445, x: 464, y: 139 }, matchCount: 1 } },
+    };
+    expect(formatRecord(rec, 1)).toBe(
+`## [1] div.bg-card
+    text:   "Starter $9/mo"
+    bbox:   320×445 @ (464,139)
+    color: x → y`);
   });
 });
 
