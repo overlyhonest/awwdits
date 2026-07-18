@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeChildren, childSignature, snippetText } from './elementContext.js';
+import { summarizeChildren, childSignature, snippetText, buildHook } from './elementContext.js';
+
+const fakeEl = (opts) => ({
+  id: opts.id || '',
+  getAttribute: (a) => opts.attrs?.[a] ?? null,
+  closest: (sel) => {
+    const m = sel.match(/\[([\w-]+)\]/); const name = m && m[1];
+    return (opts.attrs && name in opts.attrs) ? { getAttribute: (a) => opts.attrs[a] } : null;
+  },
+});
 
 describe('childSignature', () => {
   it('joins up to three classes onto the tag', () => {
@@ -29,6 +38,43 @@ describe('summarizeChildren', () => {
   });
   it('reports zero children', () => {
     expect(summarizeChildren([])).toEqual({ count: 0, signature: null });
+  });
+});
+
+describe('buildHook', () => {
+  it('prefers data-testid over id, aria-label, and data-slot', () => {
+    const el = fakeEl({ id: 'clean-id', attrs: { 'data-testid': 'invoice-card', 'aria-label': 'Invoice', 'data-slot': 'card' } });
+    expect(buildHook(el)).toEqual({ kind: 'data-testid', value: 'invoice-card' });
+  });
+
+  it('skips an auto-generated id containing a colon and falls through', () => {
+    const el = fakeEl({ id: 'radix-:r1:', attrs: { 'aria-label': 'Close' } });
+    expect(buildHook(el)).toEqual({ kind: 'aria-label', value: 'Close' });
+  });
+
+  it('skips an auto-generated id with a hex-like run and falls through', () => {
+    const el = fakeEl({ id: 'e8f3a2b1c0', attrs: { 'data-slot': 'card' } });
+    expect(buildHook(el)).toEqual({ kind: 'data-slot', value: 'card' });
+  });
+
+  it('uses a clean id when no testid is present', () => {
+    const el = fakeEl({ id: 'main-nav', attrs: { 'aria-label': 'Navigation', 'data-slot': 'nav' } });
+    expect(buildHook(el)).toEqual({ kind: 'id', value: 'main-nav' });
+  });
+
+  it('uses aria-label when no testid or clean id is present', () => {
+    const el = fakeEl({ attrs: { 'aria-label': 'Invoice #INV-2847', 'data-slot': 'card' } });
+    expect(buildHook(el)).toEqual({ kind: 'aria-label', value: 'Invoice #INV-2847' });
+  });
+
+  it('uses data-slot when only it is present', () => {
+    const el = fakeEl({ attrs: { 'data-slot': 'card' } });
+    expect(buildHook(el)).toEqual({ kind: 'data-slot', value: 'card' });
+  });
+
+  it('returns null when none of testid/id/aria-label/data-slot are present', () => {
+    const el = fakeEl({});
+    expect(buildHook(el)).toBeNull();
   });
 });
 

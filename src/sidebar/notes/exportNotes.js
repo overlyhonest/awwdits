@@ -4,20 +4,21 @@
 // (token → leaf, with sources), page/element theme, and layout context for comments.
 // Everything degrades — a record with no context renders as heading + comment + plain edits.
 // Pure: no DOM. The page-state header is passed in by the (DOM-having) caller.
-import { pathToSelector } from '../../utils/helpers/domPath.js';
-
 const CORNERS = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
 
 export function formatAll(records, pageState = null) {
   const body = records.map((r, i) => formatRecord(r, i + 1, pageState ? pageState.mode : null)).join('\n\n');
-  return pageState && pageState.header ? `${pageState.header}\n\n${body}` : body;
+  if (!pageState || !pageState.header) return body;
+  const n = records.length;
+  const instruction = `Apply these ${n} UI review note${n === 1 ? '' : 's'}. In each block the Comment or the edit (\`prop: before → after\`) is the change to make; selector / text / hook only locate the element — treat them as context, not requirements.`;
+  return `${instruction}\n\n${pageState.header}\n\n${body}`;
 }
 
 export function formatRecord(record, index, pageMode = null) {
   const ctx = record.context || {};
   const lines = [`## [${index}] ${record.selector}`];
 
-  if (ctx.locator) lines.push(...formatLocator(ctx.locator, record.path));
+  if (ctx.locator) lines.push(...formatLocator(ctx.locator));
 
   if (ctx.theme && ctx.theme.mode !== pageMode) {
     lines.push(`    theme:  ${ctx.theme.mode}  (via ${ctx.theme.carrier} on ${ctx.theme.carrierSelector})`);
@@ -36,24 +37,21 @@ export function formatRecord(record, index, pageMode = null) {
 }
 
 function formatCommentContext(ctx) {
-  const out = [];
-  out.push(`      layout:    ${formatLayout(ctx.layout)}`);
-  if (ctx.children && ctx.children.count > 0) {
-    out.push(`      children:  ${ctx.children.signature ? `${ctx.children.count} × ${ctx.children.signature}` : ctx.children.count}`);
-  }
-  return out;
+  return [`      layout:    ${formatLayout(ctx.layout)}`];
 }
 
 // Locator lines sit right under the heading (before the theme line). Labels are padded to
 // 8 so values align at column 12 (same as the existing `theme:` line).
-function formatLocator(loc, path) {
+function formatLocator(loc) {
   const out = [];
   if (loc.text) out.push(`    ${'text:'.padEnd(8)}"${loc.text}"`);
-  if (loc.bbox) out.push(`    ${'bbox:'.padEnd(8)}${loc.bbox.w}×${loc.bbox.h} @ (${loc.bbox.x},${loc.bbox.y})`);
-  if (loc.matchCount > 1 && path && path.length) {
-    out.push(`    ${'match:'.padEnd(8)}${loc.matchCount} on page · ${pathToSelector(path)}`);
-  }
+  if (loc.hook) out.push(`    ${'hook:'.padEnd(8)}${formatHook(loc.hook)}`);
   return out;
+}
+function formatHook(h) {
+  if (h.kind === 'id') return `#${h.value}`;
+  if (h.kind === 'aria-label') return `aria-label="${h.value}"`;
+  return `${h.kind}="${h.value}"`;   // data-testid / data-slot
 }
 
 export function formatLayout(l) {
@@ -61,8 +59,7 @@ export function formatLayout(l) {
   if (l.flexDirection) parts.push(`flex-direction:${l.flexDirection}`);
   if (l.gridTemplateColumns) parts.push(`grid-template-columns:${l.gridTemplateColumns}`);
   if (l.gridTemplateRows) parts.push(`grid-template-rows:${l.gridTemplateRows}`);
-  if (l.gap) parts.push(`gap:${l.gap}`);
-  return parts.join('; ');
+  return parts.join('; ');   // gap intentionally omitted — a sub-pixel number reads as a fake target
 }
 
 function formatEdits(edits, chains) {

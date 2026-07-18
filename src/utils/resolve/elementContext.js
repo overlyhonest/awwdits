@@ -5,7 +5,6 @@
 import { resolveChain } from './varChain.js';
 import { matchedDeclaration, buildLookup, rootFontSizeSource } from './cssSource.js';
 import { detectTheme } from './pageState.js';
-import { buildSelector } from '../extractors/styleExtractor.js';
 
 export function childSignature(kid) {
   const cls = (kid.classes || []).filter(c => !c.includes(':')).slice(0, 3);
@@ -52,10 +51,8 @@ export function captureForComment(el, { sheets = document.styleSheets } = {}) {
       flexDirection: (!isGrid && cs.display.includes('flex')) ? cs.flexDirection : null,
       gridTemplateColumns: isGrid && cs.gridTemplateColumns !== 'none' ? cs.gridTemplateColumns : null,
       gridTemplateRows: isGrid && cs.gridTemplateRows !== 'none' ? cs.gridTemplateRows : null,
-      gap: (cs.gap && cs.gap !== 'normal' && cs.gap !== '0px') ? cs.gap : null,
     };
-    const kids = Array.from(el.children).map(c => ({ tag: c.tagName.toLowerCase(), classes: Array.from(c.classList) }));
-    return { layout, children: summarizeChildren(kids), theme, locator };
+    return { layout, theme, locator };
   } catch {
     return { theme, locator };
   }
@@ -74,12 +71,25 @@ export function snippetText(raw) {
   return t.length > 80 ? t.slice(0, 79) + '…' : t;   // … is U+2026
 }
 
-// Locator fields to help a human/LLM find this element. matchCount > 1 means the class
-// selector is ambiguous, so the exporter emits a unique path to disambiguate.
-export function buildLocator(el, { doc = (typeof document !== 'undefined' ? document : null) } = {}) {
-  let text = null, bbox = null, matchCount = 1;
+// Standards-first source hook: the most stable, greppable handle for locating this element
+// in source. DOM attributes only (framework-agnostic). data-testid/id/aria-label/data-slot,
+// in descending order of how deliberately-placed-and-greppable they are.
+export function buildHook(el) {
+  try {
+    const testidEl = el.closest && el.closest('[data-testid]');
+    if (testidEl) return { kind: 'data-testid', value: testidEl.getAttribute('data-testid') };
+    const id = el.id;
+    if (id && !/[:]|^[0-9]|[0-9a-f]{8}/i.test(id) && id.length <= 40) return { kind: 'id', value: id };
+    const aria = el.getAttribute && el.getAttribute('aria-label');
+    if (aria) return { kind: 'aria-label', value: aria };
+    const slotEl = el.closest && el.closest('[data-slot]');
+    if (slotEl) return { kind: 'data-slot', value: slotEl.getAttribute('data-slot') };
+  } catch { /* ignore — no hook */ }
+  return null;
+}
+
+export function buildLocator(el) {
+  let text = null;
   try { text = snippetText(el.textContent); } catch { /* ignore */ }
-  try { const r = el.getBoundingClientRect(); bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) }; } catch { /* ignore */ }
-  try { const sel = buildSelector(el); matchCount = (sel && doc) ? doc.querySelectorAll(sel).length : 1; } catch { /* ignore */ }
-  return { text, bbox, matchCount };
+  return { text, hook: buildHook(el) };
 }

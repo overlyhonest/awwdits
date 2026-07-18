@@ -22,10 +22,10 @@ function carrier(mode, sel, carrierSelector) {
   return { mode, method: `carrier:${sel}`, carrier: sel, carrierSelector };
 }
 
-export function pageHeader({ url, viewport: { w, h }, date, theme }) {
+export function pageHeader({ url, date, theme }) {
   const parts = ['# awwdits', url];
   if (theme) parts.push(`${theme.mode} mode (${theme.method})`);
-  parts.push(`${w}×${h}`, date);
+  parts.push(date);
   return parts.join(' · ');
 }
 
@@ -77,11 +77,6 @@ export function detectPageTheme({ sheets = document.styleSheets } = {}) {
 // Page-level state for the header. `date` is 'YYYY-MM-DD' from the caller.
 export function currentPageState(date, { sheets = document.styleSheets } = {}) {
   const rootTheme = detectPageTheme({ sheets });
-  const header = pageHeader({
-    url: location.href,
-    viewport: { w: window.innerWidth, h: window.innerHeight },
-    date,
-    theme: rootTheme,
-  });
+  const header = pageHeader({ url: location.href, date, theme: rootTheme });
   return { header, mode: rootTheme ? rootTheme.mode : null };
 }
