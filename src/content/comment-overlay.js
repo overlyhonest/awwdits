@@ -12,6 +12,7 @@ import { positionPin, PIN_SIZE } from './commentOverlayGeometry.js';
 import { buildSelector } from '../utils/extractors/styleExtractor.js';
 import { buildPath, locateElement, pathToSelector } from '../utils/helpers/domPath.js';
 import { COLORS, COMMENT, FONT, SIZE, WEIGHT, ensureOverlayFonts } from './overlayTokens.js';
+import { captureForComment } from '../utils/resolve/elementContext.js';
 
 const LAYER_ID = 'awwdits-comments';
 const Z = 2147483646;
@@ -192,8 +193,9 @@ export function openComposerFor(element, prefill = '') {
   const save = () => {
     const text = ta.value.trim();
     const t = describe(element);
+    const context = captureForComment(element);
     closeComposer();
-    if (onSaveCb) onSaveCb({ selector: t.selector, path: t.path, label: t.label, text });
+    if (onSaveCb) onSaveCb({ selector: t.selector, path: t.path, label: t.label, text, context });
   };
   const onKey = (e) => {
     if (e.key === 'Escape') { e.preventDefault(); closeComposer(); }

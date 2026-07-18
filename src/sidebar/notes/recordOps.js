@@ -31,7 +31,19 @@ export function findRecord(records, key) {
   return records.find(r => recordKey(r) === key) || null;
 }
 
-export function upsertEdit(records, { selector, path, label, property, before, after }, now = Date.now()) {
+// Merge a captured context fragment onto a record's context. Returns a NEW context object
+// (chains shallow-merged, scalar fields overwritten) so cloned records never share state
+// with their inputs.
+export function mergeContext(existing, fragment) {
+  if (!fragment) return existing;
+  const next = { ...(existing || {}), chains: { ...((existing && existing.chains) || {}), ...(fragment.chains || {}) } };
+  for (const k of ['layout', 'children', 'bbox', 'theme', 'locator']) {
+    if (fragment[k] !== undefined) next[k] = fragment[k];
+  }
+  return next;
+}
+
+export function upsertEdit(records, { selector, path, label, property, before, after, context }, now = Date.now()) {
   const next = cloneRecords(records);
   const rec = ensureRecord(next, { selector, path, label }, now);
   const existing = rec.edits.find(e => e.property === property);
@@ -39,14 +51,16 @@ export function upsertEdit(records, { selector, path, label, property, before, a
   else rec.edits.push({ property, before, after });
   rec.edits = rec.edits.filter(e => e.after !== e.before); // revert removes the edit
   if (!rec.path || !rec.path.length) rec.path = path || [];
+  if (context) rec.context = mergeContext(rec.context, context);
   rec.updatedAt = now;
   return next;
 }
 
-export function setComment(records, { selector, path, label }, text, now = Date.now()) {
+export function setComment(records, { selector, path, label, context }, text, now = Date.now()) {
   const next = cloneRecords(records);
   const rec = ensureRecord(next, { selector, path, label }, now);
   rec.comment = text;
+  if (context) rec.context = mergeContext(rec.context, context);
   rec.updatedAt = now;
   return next;
 }
