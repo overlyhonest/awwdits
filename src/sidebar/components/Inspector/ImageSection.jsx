@@ -29,13 +29,20 @@ function Prop({ label, value }) {
 function ImageSection({ image }) {
   const [fileSize, setFileSize] = useState(null);
   const [previewError, setPreviewError] = useState(false);
+  // The real asset URL (img / background) — used for the byte-size fetch + download.
   const src = image?.src || image?.url || null;
+  // A previewable source for EVERY visual type: url (img/bg) · dataUrl (canvas) · poster
+  // (video) · serialized markup as a data URI (inline svg).
+  const svgUri = image?.markup ? `data:image/svg+xml;utf8,${encodeURIComponent(image.markup)}` : null;
+  const previewSrc = src || image?.dataUrl || image?.poster || svgUri || null;
+
+  // Reset the load-error flag whenever the previewed source changes (any type).
+  useEffect(() => { setPreviewError(false); }, [previewSrc]);
 
   // Best-effort byte size — CORS may block; aborted on src change so rapid switching
-  // doesn't leave stale full-image downloads in flight.
+  // doesn't leave stale full-image downloads in flight. Only real URLs are fetchable.
   useEffect(() => {
     setFileSize(null);
-    setPreviewError(false);
     if (!src) return;
     const ctrl = new AbortController();
     fetch(src, { signal: ctrl.signal })
@@ -59,9 +66,10 @@ function ImageSection({ image }) {
 
   return (
     <div style={{ padding: '2px 16px 16px' }}>
-      {/* Preview — checkerboard behind it so transparency reads. Hidden when there's no
-          resolvable src (inline <svg>) or the image fails to load (CORS / broken URL). */}
-      {src && !previewError && (
+      {/* Preview — checkerboard behind it so transparency reads. Covers every visual type
+          (img · background · svg · canvas · video poster); hidden only when nothing is
+          resolvable (e.g. a tainted canvas) or the source fails to load. */}
+      {previewSrc && !previewError && (
         <div style={{
           marginBottom: 14,
           display: 'flex',
@@ -81,7 +89,7 @@ function ImageSection({ image }) {
           backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
         }}>
           <img
-            src={src}
+            src={previewSrc}
             alt={image.alt || ''}
             onError={() => setPreviewError(true)}
             style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }}

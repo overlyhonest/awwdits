@@ -119,9 +119,39 @@ function extractImageData(element, tag, computed) {
   }
 
   if (tag === 'svg') {
+    // Serialize the live SVG so the (sandboxed) sidebar can preview it via a data URI.
+    // Resolve currentColor to the element's computed color so monochrome icons don't render
+    // as default black, and ensure an xmlns so the markup stands alone in an <img>.
+    let markup = null;
+    try {
+      let s = element.outerHTML;
+      if (computed.color && s.includes('currentColor')) s = s.split('currentColor').join(computed.color);
+      if (!/\bxmlns=/.test(s)) s = s.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+      markup = s;
+    } catch { /* serialization blocked — no preview */ }
     return {
       type: 'svg',
       viewBox: element.getAttribute('viewBox') || '',
+      renderedWidth: computed.width,
+      renderedHeight: computed.height,
+      markup,
+    };
+  }
+
+  if (tag === 'canvas') {
+    // Snapshot the current frame; a cross-origin-tainted canvas throws — degrade to no preview.
+    let dataUrl = null;
+    try { dataUrl = element.toDataURL(); } catch { /* tainted — no preview */ }
+    return { type: 'canvas', renderedWidth: computed.width, renderedHeight: computed.height, dataUrl };
+  }
+
+  if (tag === 'video') {
+    // Preview the poster frame (the current video frame isn't reliably capturable without
+    // taint). `videoSrc` is info only — NOT `src`, which the preview would treat as an image.
+    return {
+      type: 'video',
+      poster: element.getAttribute('poster') || '',
+      videoSrc: element.currentSrc || element.src || '',
       renderedWidth: computed.width,
       renderedHeight: computed.height,
     };
