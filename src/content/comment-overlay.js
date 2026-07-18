@@ -89,14 +89,14 @@ export function pulsePin(selector, path) {
 function entryFor(pinEl) { return entries.find(e => e.pinEl === pinEl) || null; }
 
 // Figma-style comment pin (design node 2125:2452): a gradient teardrop bubble with
-// a sharp bottom-left tail, a soft shadow, and its 1-based index in white. PIN_SIZE
+// a sharp bottom-right tail, a soft shadow, and its 1-based index in white. PIN_SIZE
 // drives both the visual size and the geometry, so the two never drift.
 function makePin(number) {
   const el = document.createElement('div');
   el.className = 'awwdits-pin';
   el.style.cssText =
     `position:fixed;width:${PIN_SIZE}px;height:${PIN_SIZE}px;box-sizing:border-box;` +
-    'border-radius:50% 50% 50% 2px;' +
+    'border-radius:50% 50% 2px 50%;' +
     'box-shadow:0 2px 10px rgba(0,0,0,0.28);cursor:pointer;display:none;' +
     'align-items:center;justify-content:center;pointer-events:auto;' +
     `background:${COMMENT.gradient}`;
