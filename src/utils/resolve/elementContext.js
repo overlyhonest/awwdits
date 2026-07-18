@@ -109,15 +109,19 @@ export function readReactComponent(el) {
   try {
     const key = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
     if (!key) return null;
-    for (let f = el[key], hops = 0; f && hops < 80; f = f.return, hops++) {
+    const hostFiber = el[key];
+    // Source comes from the ELEMENT's own (host) fiber: its _debugSource is where this
+    // element's JSX is written — i.e. inside the owning component's file, stable across every
+    // instance. The nearest *component* fiber's _debugSource would instead be this instance's
+    // call site (App.tsx:42 for one usage, elsewhere for another) — not what we want.
+    const ds = hostFiber && hostFiber._debugSource;
+    const source = (ds && ds.fileName)
+      ? { file: ds.fileName.split(/[\\/]/).pop(), line: ds.lineNumber ?? null }
+      : null;
+    // Name comes from walking up to the nearest component fiber (host tags yield null).
+    for (let f = hostFiber, hops = 0; f && hops < 80; f = f.return, hops++) {
       const name = componentName(f.type);
-      if (name && name.length > 2) {   // skip host tags (null) and minified ≤2-char names
-        const ds = f._debugSource;
-        const source = (ds && ds.fileName)
-          ? { file: ds.fileName.split(/[\\/]/).pop(), line: ds.lineNumber ?? null }
-          : null;
-        return { name, source };
-      }
+      if (name && name.length > 2) return { name, source };   // skip minified ≤2-char names
     }
     return null;
   } catch { return null; }

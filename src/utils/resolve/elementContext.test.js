@@ -82,30 +82,32 @@ describe('readReactComponent', () => {
   const F = (type, ret, _debugSource) => ({ type, return: ret, _debugSource });
   const withFiber = (fiber) => ({ '__reactFiber$abc': fiber });
 
-  it('resolves the nearest component name and its dev source', () => {
-    const app = F(function App() {}, null);
-    const button = F(function Button() {}, app, { fileName: '/proj/src/ui/button.tsx', lineNumber: 8 });
-    const host = F('button', button);   // the DOM element's own (host) fiber
+  it('takes the name from the nearest component but the source from the host fiber', () => {
+    const app = F(function App() {}, null, { fileName: '/proj/src/App.tsx', lineNumber: 42 });  // call site — NOT used
+    const button = F(function Button() {}, app, { fileName: '/proj/src/App.tsx', lineNumber: 42 });
+    const host = F('button', button, { fileName: '/proj/src/ui/button.tsx', lineNumber: 8 });   // element's own markup
     expect(readReactComponent(withFiber(host)))
       .toEqual({ name: 'Button', source: { file: 'button.tsx', line: 8 } });
   });
 
   it('reads a forwardRef displayName (shadcn pattern)', () => {
     const card = F({ $$typeof: Symbol('react.forward_ref'), render: function () {}, displayName: 'Card' }, null);
-    const host = F('div', card);
-    expect(readReactComponent(withFiber(host)).name).toBe('Card');
+    const host = F('div', card, { fileName: '/src/card.tsx', lineNumber: 3 });
+    expect(readReactComponent(withFiber(host))).toEqual({ name: 'Card', source: { file: 'card.tsx', line: 3 } });
   });
 
-  it('gives name only when there is no _debugSource (prod / React 19)', () => {
+  it('gives name only when the host fiber has no _debugSource (prod / React 19)', () => {
     const modal = F(function Modal() {}, null);
-    const host = F('div', modal);
+    const host = F('div', modal);   // no _debugSource
     expect(readReactComponent(withFiber(host))).toEqual({ name: 'Modal', source: null });
   });
 
-  it('skips minified ≤2-char component names', () => {
-    const mini = F(function Xe() {}, null);   // name "Xe" (length 2) → skipped
-    const host = F('div', mini);
-    expect(readReactComponent(withFiber(host))).toBeNull();
+  it('skips minified ≤2-char names and continues to a real ancestor', () => {
+    const real = F(function Sidebar() {}, null);
+    const mini = F(function Xe() {}, real);   // "Xe" (length 2) → skipped, walk continues
+    const host = F('div', mini, { fileName: '/src/side.tsx', lineNumber: 3 });
+    expect(readReactComponent(withFiber(host)))
+      .toEqual({ name: 'Sidebar', source: { file: 'side.tsx', line: 3 } });
   });
 
   it('returns null on a non-React element', () => {
