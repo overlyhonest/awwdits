@@ -1,6 +1,6 @@
 // src/utils/resolve/pageState.js
-// Theme detection + export header. The pure core (detectThemeFromChain, pageHeader) is
-// tested without a DOM; the DOM readers (readAncestorChain, detectTheme, currentPageState)
+// Theme detection + page context for the export preamble. The pure core (detectThemeFromChain)
+// is tested without a DOM; the DOM readers (readAncestorChain, detectTheme, currentPageState)
 // are thin wrappers used by the content script.
 
 // chain: [{ selector, classList:[...], attrs:{...} }] from the element upward.
@@ -20,13 +20,6 @@ export function detectThemeFromChain(chain, { prefersDark, hasMediaRule }) {
 }
 function carrier(mode, sel, carrierSelector) {
   return { mode, method: `carrier:${sel}`, carrier: sel, carrierSelector };
-}
-
-export function pageHeader({ url, date, theme }) {
-  const parts = ['# awwdits', url];
-  if (theme) parts.push(`${theme.mode} mode (${theme.method})`);
-  parts.push(date);
-  return parts.join(' · ');
 }
 
 export function sheetsHavePrefersColorScheme(sheets) {
@@ -74,9 +67,9 @@ export function detectPageTheme({ sheets = document.styleSheets } = {}) {
   return carrier ? detectTheme(carrier, { sheets }) : null;
 }
 
-// Page-level state for the header. `date` is 'YYYY-MM-DD' from the caller.
+// Page context for the export preamble. `date` is 'YYYY-MM-DD' from the caller. `mode` is
+// also used per-record to suppress the theme line when an element agrees with the page.
 export function currentPageState(date, { sheets = document.styleSheets } = {}) {
   const rootTheme = detectPageTheme({ sheets });
-  const header = pageHeader({ url: location.href, date, theme: rootTheme });
-  return { header, mode: rootTheme ? rootTheme.mode : null };
+  return { url: location.href, mode: rootTheme ? rootTheme.mode : null, date };
 }

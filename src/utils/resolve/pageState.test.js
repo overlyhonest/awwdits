@@ -1,6 +1,6 @@
 // src/utils/resolve/pageState.test.js
 import { describe, it, expect } from 'vitest';
-import { detectThemeFromChain, pageHeader, sheetsHavePrefersColorScheme } from './pageState.js';
+import { detectThemeFromChain, sheetsHavePrefersColorScheme } from './pageState.js';
 
 const node = (selector, classList = [], attrs = {}) => ({ selector, classList, attrs });
 
@@ -73,15 +73,3 @@ describe('sheetsHavePrefersColorScheme', () => {
   });
 });
 
-describe('pageHeader', () => {
-  it('includes the mode segment when theme is present', () => {
-    const h = pageHeader({ url: 'http://localhost:5173/', date: '2026-07-17',
-      theme: { mode: 'light', method: 'prefers-color-scheme' } });
-    expect(h).toBe('# awwdits · http://localhost:5173/ · light mode (prefers-color-scheme) · 2026-07-17');
-  });
-
-  it('omits the mode segment entirely when theme is null', () => {
-    const h = pageHeader({ url: 'http://x/', date: '2026-07-17', theme: null });
-    expect(h).toBe('# awwdits · http://x/ · 2026-07-17');
-  });
-});

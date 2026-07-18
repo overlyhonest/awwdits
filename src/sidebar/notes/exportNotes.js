@@ -3,15 +3,28 @@
 // line: when a record carries captured `context`, we also emit the resolved var() chain
 // (token → leaf, with sources), page/element theme, and layout context for comments.
 // Everything degrades — a record with no context renders as heading + comment + plain edits.
-// Pure: no DOM. The page-state header is passed in by the (DOM-having) caller.
+// Pure: no DOM. The page context (url/theme/date) is passed in by the (DOM-having) caller.
 const CORNERS = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
 
 export function formatAll(records, pageState = null) {
   const body = records.map((r, i) => formatRecord(r, i + 1, pageState ? pageState.mode : null)).join('\n\n');
-  if (!pageState || !pageState.header) return body;
-  const n = records.length;
-  const instruction = `Apply these ${n} UI review note${n === 1 ? '' : 's'}. In each block the Comment or the edit (\`prop: before → after\`) is the change to make; selector / text / hook only locate the element — treat them as context, not requirements.`;
-  return `${instruction}\n\n${pageState.header}\n\n${body}`;
+  if (!pageState) return body;
+  return `${preamble(records.length, pageState)}\n\n${body}`;
+}
+
+// A short human/LLM-readable intro: what this is, the page it came from, and how to read
+// each block — so the reader understands the payload with no external context. Replaces a
+// bare metadata header (which read as noise and didn't say what was being shared).
+function preamble(n, { url, mode, date }) {
+  const bits = [];
+  if (mode) bits.push(`${mode} theme`);
+  if (date) bits.push(date);
+  const ctx = bits.length ? ` (${bits.join(', ')})` : '';
+  const where = url ? ` on ${url}${ctx}` : '';
+  const s = n === 1 ? '' : 's';
+  return `Design-review feedback from the awwdits browser extension — ${n} note${s}${where}.\n\n`
+    + 'Each block below is one element on the page. The heading, `text:`, and `hook:` lines only '
+    + 'locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make.';
 }
 
 export function formatRecord(record, index, pageMode = null) {
