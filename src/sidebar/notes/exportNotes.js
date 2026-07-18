@@ -57,9 +57,15 @@ function formatCommentContext(ctx) {
 // 8 so values align at column 12 (same as the existing `theme:` line).
 function formatLocator(loc) {
   const out = [];
+  if (loc.component) out.push(`    ${'comp:'.padEnd(8)}${formatComponent(loc.component)}`);
   if (loc.text) out.push(`    ${'text:'.padEnd(8)}"${loc.text}"`);
   if (loc.hook) out.push(`    ${'hook:'.padEnd(8)}${formatHook(loc.hook)}`);
   return out;
+}
+function formatComponent(c) {
+  if (!c.source) return c.name;
+  const line = c.source.line != null ? `:${c.source.line}` : '';
+  return `${c.name} → ${c.source.file}${line}`;
 }
 function formatHook(h) {
   if (h.kind === 'id') return `#${h.value}`;

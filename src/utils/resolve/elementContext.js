@@ -88,8 +88,47 @@ export function buildHook(el) {
   return null;
 }
 
+// A component name off a React fiber's `type`, handling function/class components plus the
+// forwardRef and memo wrappers shadcn/Radix use heavily (a bare `typeof === 'function'`
+// check misses those). Host tags (string types like 'button') yield null.
+function componentName(type) {
+  if (!type) return null;
+  if (typeof type === 'function') return type.displayName || type.name || null;
+  if (typeof type === 'object') {
+    if (type.displayName) return type.displayName;            // memo/forwardRef displayName
+    if (type.render) return type.render.displayName || type.render.name || null;  // forwardRef
+    if (type.type) return componentName(type.type);           // memo(Component)
+  }
+  return null;
+}
+
+// The React adapter of the locator cascade: the nearest component name + its dev-build
+// source (`_debugSource`, absent in prod and in React 19). Framework-specific and fully
+// guarded — returns null on non-React pages, minified prod names, or any internals change.
+export function readReactComponent(el) {
+  try {
+    const key = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+    if (!key) return null;
+    const hostFiber = el[key];
+    // Source comes from the ELEMENT's own (host) fiber: its _debugSource is where this
+    // element's JSX is written — i.e. inside the owning component's file, stable across every
+    // instance. The nearest *component* fiber's _debugSource would instead be this instance's
+    // call site (App.tsx:42 for one usage, elsewhere for another) — not what we want.
+    const ds = hostFiber && hostFiber._debugSource;
+    const source = (ds && ds.fileName)
+      ? { file: ds.fileName.split(/[\\/]/).pop(), line: ds.lineNumber ?? null }
+      : null;
+    // Name comes from walking up to the nearest component fiber (host tags yield null).
+    for (let f = hostFiber, hops = 0; f && hops < 80; f = f.return, hops++) {
+      const name = componentName(f.type);
+      if (name && name.length > 2) return { name, source };   // skip minified ≤2-char names
+    }
+    return null;
+  } catch { return null; }
+}
+
 export function buildLocator(el) {
   let text = null;
   try { text = snippetText(el.textContent); } catch { /* ignore */ }
-  return { text, hook: buildHook(el) };
+  return { component: readReactComponent(el), text, hook: buildHook(el) };
 }
