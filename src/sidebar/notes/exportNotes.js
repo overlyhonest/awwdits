@@ -5,7 +5,6 @@
 // Everything degrades — a record with no context renders as heading + comment + plain edits.
 // Pure: no DOM. The page-state header is passed in by the (DOM-having) caller.
 const CORNERS = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
-const PAINT_PROPS = ['background-color', 'color', 'border-color'];
 
 export function formatAll(records, pageState = null) {
   const body = records.map((r, i) => formatRecord(r, i + 1, pageState ? pageState.mode : null)).join('\n\n');
@@ -39,12 +38,6 @@ function formatCommentContext(ctx) {
     out.push(`      children:  ${ctx.children.signature ? `${ctx.children.count} × ${ctx.children.signature}` : ctx.children.count}`);
   }
   if (ctx.bbox) out.push(`      bbox:      ${ctx.bbox.w}×${ctx.bbox.h} @ (${ctx.bbox.x},${ctx.bbox.y})`);
-  for (const p of PAINT_PROPS) {
-    const chain = ctx.chains && ctx.chains[p];
-    if (!chain) continue;
-    out.push(`      ${p}: ${chain.computed}`);
-    out.push(...renderChainBlock(chain, 8));
-  }
   return out;
 }
 

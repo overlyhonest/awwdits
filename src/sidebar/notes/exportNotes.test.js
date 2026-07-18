@@ -77,17 +77,12 @@ describe('formatRecord — 4-corner collapse', () => {
 });
 
 describe('formatRecord — comment context (items 2 & 3)', () => {
-  it('renders layout/children/bbox and a var-backed paint chain', () => {
+  it('renders layout/children/bbox for a comment (locate only, no chains)', () => {
     const rec = {
       selector: 'div.bg-card.text-card-foreground.flex', comment: 'bg can be more darker', edits: [],
       context: {
         layout: { display: 'flex', flexDirection: 'column', gridTemplateColumns: null, gridTemplateRows: null, gap: '24px' },
         children: { count: 3, signature: 'div' }, bbox: { w: 384, h: 212, x: 64, y: 140 },
-        chains: { 'background-color': {
-          declared: 'var(--card)', via: '.bg-card', computed: 'oklch(0.21 0 0)',
-          hops: [{ name: '--card', value: 'oklch(0.21 0 0)', source: S('theme.css', 71) }],
-          root: null, truncated: false, cyclic: false,
-        } },
       },
     };
     expect(formatRecord(rec, 2)).toBe(
@@ -95,10 +90,7 @@ describe('formatRecord — comment context (items 2 & 3)', () => {
     Comment: "bg can be more darker"
       layout:    display:flex; flex-direction:column; gap:24px
       children:  3 × div
-      bbox:      384×212 @ (64,140)
-      background-color: oklch(0.21 0 0)
-        declared:  var(--card)  via .bg-card
-        chain:     --card = oklch(0.21 0 0)  theme.css:71`);
+      bbox:      384×212 @ (64,140)`);
   });
 
   it('renders a bare-div comment with layout only', () => {

@@ -6,8 +6,6 @@ import { resolveChain } from './varChain.js';
 import { matchedDeclaration, buildLookup, rootFontSizeSource } from './cssSource.js';
 import { detectTheme } from './pageState.js';
 
-const PAINT_PROPS = ['background-color', 'color', 'border-color'];
-
 export function childSignature(kid) {
   const cls = (kid.classes || []).filter(c => !c.includes(':')).slice(0, 3);
   return cls.length ? `${kid.tag}.${cls.join('.')}` : kid.tag;
@@ -44,8 +42,6 @@ export function captureForEdit(el, kebabProp, { sheets = document.styleSheets } 
 
 export function captureForComment(el, { sheets = document.styleSheets } = {}) {
   const theme = safeTheme(el, sheets);
-  const chains = {};
-  for (const p of PAINT_PROPS) { const c = resolveProp(el, p, { sheets }); if (c) chains[p] = c; }
   try {
     const cs = getComputedStyle(el);
     const isGrid = cs.display.includes('grid');
@@ -59,9 +55,9 @@ export function captureForComment(el, { sheets = document.styleSheets } = {}) {
     const kids = Array.from(el.children).map(c => ({ tag: c.tagName.toLowerCase(), classes: Array.from(c.classList) }));
     const r = el.getBoundingClientRect();
     const bbox = { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
-    return { chains, layout, children: summarizeChildren(kids), bbox, theme };
+    return { layout, children: summarizeChildren(kids), bbox, theme };
   } catch {
-    return { chains, theme };
+    return { theme };
   }
 }
 

@@ -104,11 +104,27 @@ export function buildLookup(el, { sheets = document.styleSheets } = {}) {
   };
 }
 
+// CSSOM does not expand a var()-containing shorthand into its longhands, so a per-longhand
+// lookup misses the declaration. Fall back to the shorthand when the longhand isn't var-backed.
+const SHORTHAND_OF = {
+  'border-top-left-radius': 'border-radius', 'border-top-right-radius': 'border-radius',
+  'border-bottom-right-radius': 'border-radius', 'border-bottom-left-radius': 'border-radius',
+  'margin-top': 'margin', 'margin-right': 'margin', 'margin-bottom': 'margin', 'margin-left': 'margin',
+  'padding-top': 'padding', 'padding-right': 'padding', 'padding-bottom': 'padding', 'padding-left': 'padding',
+  'border-top-width': 'border-width', 'border-right-width': 'border-width',
+  'border-bottom-width': 'border-width', 'border-left-width': 'border-width',
+  'top': 'inset', 'right': 'inset', 'bottom': 'inset', 'left': 'inset',
+};
+
 // The winning author declaration of a normal (non-custom) property ON the element itself,
 // but only when its value is var-backed (otherwise there is no chain to reconstruct).
 export function matchedDeclaration(el, kebabProp, { sheets = document.styleSheets } = {}) {
   const rules = collectStyleRules(sheets);
-  const w = winner(rules, [el], kebabProp);
+  let w = winner(rules, [el], kebabProp);
+  if ((!w || !w.val.includes('var(')) && SHORTHAND_OF[kebabProp]) {
+    const sw = winner(rules, [el], SHORTHAND_OF[kebabProp]);   // var shorthand the CSSOM couldn't expand
+    if (sw && sw.val.includes('var(')) w = sw;
+  }
   if (!w || !w.val.includes('var(')) return null;
   return { declared: w.val, via: w.rule.selectorText, source: sourceForRule(w.rule) };
 }

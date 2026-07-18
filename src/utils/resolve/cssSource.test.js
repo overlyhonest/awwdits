@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectStyleRules, specificity, buildLookup, sourceForRule } from './cssSource.js';
+import { collectStyleRules, specificity, buildLookup, sourceForRule, matchedDeclaration } from './cssSource.js';
 
 // --- fakes -------------------------------------------------------------
 function rule(selectorText, decls, extra = {}) {
@@ -62,6 +62,16 @@ describe('buildLookup', () => {
   it('returns null for an undefined variable', () => {
     const lookup = buildLookup(el(['.a']), { sheets: [sheet([ rule('.a', { color: 'red' }) ])] });
     expect(lookup('--nope')).toBe(null);
+  });
+});
+
+describe('matchedDeclaration', () => {
+  it('falls back to a var-based shorthand when a longhand is queried', () => {
+    const e = el(['.rounded-md']);
+    const md = matchedDeclaration(e, 'border-top-left-radius', { sheets: [sheet([
+      rule('.rounded-md', { 'border-radius': 'var(--radius-md)' }),   // longhand not present; shorthand is var-backed
+    ])] });
+    expect(md).toEqual({ declared: 'var(--radius-md)', via: '.rounded-md', source: { file: null, line: null } });
   });
 });
 

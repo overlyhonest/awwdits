@@ -65,9 +65,18 @@ export function detectTheme(el, { sheets = document.styleSheets } = {}) {
   return detectThemeFromChain(readAncestorChain(el), { prefersDark, hasMediaRule });
 }
 
+// Page mode: the theme at the document root, else the outermost explicit carrier in the doc
+// (carriers commonly sit on a body wrapper, not <html>). DOM glue — not unit-tested.
+export function detectPageTheme({ sheets = document.styleSheets } = {}) {
+  const root = detectTheme(document.documentElement, { sheets });
+  if (root) return root;
+  const carrier = document.querySelector('[data-theme],[data-mode],.dark,.light');
+  return carrier ? detectTheme(carrier, { sheets }) : null;
+}
+
 // Page-level state for the header. `date` is 'YYYY-MM-DD' from the caller.
 export function currentPageState(date, { sheets = document.styleSheets } = {}) {
-  const rootTheme = detectTheme(document.documentElement, { sheets });
+  const rootTheme = detectPageTheme({ sheets });
   const header = pageHeader({
     url: location.href,
     viewport: { w: window.innerWidth, h: window.innerHeight },
