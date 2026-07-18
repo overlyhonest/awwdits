@@ -24,7 +24,8 @@ function preamble(n, { url, mode, date }) {
   const s = n === 1 ? '' : 's';
   return `Design-review feedback from the awwdits browser extension — ${n} note${s}${where}.\n\n`
     + 'Each block below is one element on the page. The heading, `text:`, and `hook:` lines only '
-    + 'locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the change to make.';
+    + 'locate it — context, not requirements. The `Comment:` or the `prop: before → after` edit is the '
+    + 'change to make. Apply each to that one element unless a `scope:` line says all similar elements.';
 }
 
 export function formatRecord(record, index, pageMode = null) {
@@ -32,6 +33,10 @@ export function formatRecord(record, index, pageMode = null) {
   const lines = [`## [${index}] ${record.selector}`];
 
   if (ctx.locator) lines.push(...formatLocator(ctx.locator));
+
+  // Scope qualifies the whole annotation. Default (this element) is silent; only the
+  // deliberate 'all similar' choice is emitted, so the reader applies it broadly on purpose.
+  if (record.scope === 'similar') lines.push(`    ${'scope:'.padEnd(8)}all similar elements`);
 
   if (ctx.theme && ctx.theme.mode !== pageMode) {
     lines.push(`    theme:  ${ctx.theme.mode}  (via ${ctx.theme.carrier} on ${ctx.theme.carrierSelector})`);

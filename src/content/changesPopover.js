@@ -146,6 +146,32 @@ function row(rec) {
   sel.textContent = rec.selector;
   sel.title = rec.selector;
   selLine.appendChild(sel);
+
+  // Scope pill — 'this element' (default, subtle) ↔ 'all similar' (emphasized). Optimistic:
+  // flips locally so Copy (reads the same records) reflects it at once, and persists via
+  // onSetScope; the popover rebuilds from storage on next open.
+  const scope = document.createElement('button'); scope.type = 'button';
+  let cur = rec.scope === 'similar' ? 'similar' : 'element';
+  const scopeLabel = () => (cur === 'similar' ? 'all similar' : 'this element');
+  scope.textContent = scopeLabel();
+  scope.title = 'Apply to this element only, or all similar elements';
+  scope.style.cssText = `font:${SIZE.sm} ${FONT.mono};border:1px solid ${COLORS.border};border-radius:6px;` +
+    'padding:1px 7px;cursor:pointer;flex:none;white-space:nowrap;transition:background .12s,color .12s';
+  const paintScope = () => {
+    scope.style.color = cur === 'similar' ? COLORS.fg : COLORS.weak;
+    scope.style.background = cur === 'similar' ? COLORS.active : 'transparent';
+  };
+  paintScope();
+  scope.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cur = cur === 'similar' ? 'element' : 'similar';
+    rec.scope = cur;                       // optimistic — copyChanges reads these same records
+    scope.textContent = scopeLabel();
+    paintScope();
+    opts.onSetScope && opts.onSetScope(rec, cur);
+  });
+  selLine.appendChild(scope);
+
   selLine.appendChild(delBtn('awd-grp', SVG_TRASH, 'Delete all for this element', () => opts.onDeleteRecord && opts.onDeleteRecord(rec)));
   body.appendChild(selLine);
 
