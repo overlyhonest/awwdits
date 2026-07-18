@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeChildren, childSignature, snippetText, buildHook } from './elementContext.js';
+import { summarizeChildren, childSignature, snippetText, buildHook, readReactComponent } from './elementContext.js';
 
 const fakeEl = (opts) => ({
   id: opts.id || '',
@@ -75,6 +75,41 @@ describe('buildHook', () => {
   it('returns null when none of testid/id/aria-label/data-slot are present', () => {
     const el = fakeEl({});
     expect(buildHook(el)).toBeNull();
+  });
+});
+
+describe('readReactComponent', () => {
+  const F = (type, ret, _debugSource) => ({ type, return: ret, _debugSource });
+  const withFiber = (fiber) => ({ '__reactFiber$abc': fiber });
+
+  it('resolves the nearest component name and its dev source', () => {
+    const app = F(function App() {}, null);
+    const button = F(function Button() {}, app, { fileName: '/proj/src/ui/button.tsx', lineNumber: 8 });
+    const host = F('button', button);   // the DOM element's own (host) fiber
+    expect(readReactComponent(withFiber(host)))
+      .toEqual({ name: 'Button', source: { file: 'button.tsx', line: 8 } });
+  });
+
+  it('reads a forwardRef displayName (shadcn pattern)', () => {
+    const card = F({ $$typeof: Symbol('react.forward_ref'), render: function () {}, displayName: 'Card' }, null);
+    const host = F('div', card);
+    expect(readReactComponent(withFiber(host)).name).toBe('Card');
+  });
+
+  it('gives name only when there is no _debugSource (prod / React 19)', () => {
+    const modal = F(function Modal() {}, null);
+    const host = F('div', modal);
+    expect(readReactComponent(withFiber(host))).toEqual({ name: 'Modal', source: null });
+  });
+
+  it('skips minified ≤2-char component names', () => {
+    const mini = F(function Xe() {}, null);   // name "Xe" (length 2) → skipped
+    const host = F('div', mini);
+    expect(readReactComponent(withFiber(host))).toBeNull();
+  });
+
+  it('returns null on a non-React element', () => {
+    expect(readReactComponent({ id: 'plain' })).toBeNull();
   });
 });
 

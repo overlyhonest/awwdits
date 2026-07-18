@@ -189,6 +189,31 @@ describe('formatRecord — layout edge cases', () => {
 });
 
 describe('formatRecord — locator', () => {
+  it('renders a component locator with source, above text and hook', () => {
+    const rec = {
+      selector: 'button.x', comment: '',
+      edits: [{ property: 'color', before: 'a', after: 'b' }],
+      context: { locator: {
+        component: { name: 'Button', source: { file: 'button.tsx', line: 8 } },
+        text: 'View report', hook: { kind: 'data-slot', value: 'button' },
+      } },
+    };
+    expect(formatRecord(rec, 1)).toBe(
+`## [1] button.x
+    comp:   Button → button.tsx:8
+    text:   "View report"
+    hook:   data-slot="button"
+    color: a → b`);
+  });
+
+  it('renders the component name alone when there is no source', () => {
+    const rec = {
+      selector: 'div', comment: 'hi', edits: [],
+      context: { locator: { component: { name: 'Modal', source: null }, text: null, hook: null } },
+    };
+    expect(formatRecord(rec, 1)).toBe('## [1] div\n    comp:   Modal\n    Comment: "hi"');
+  });
+
   it('renders text and a data-testid hook', () => {
     const rec = {
       selector: 'div.bg-card', comment: '',

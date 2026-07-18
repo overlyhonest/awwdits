@@ -88,8 +88,43 @@ export function buildHook(el) {
   return null;
 }
 
+// A component name off a React fiber's `type`, handling function/class components plus the
+// forwardRef and memo wrappers shadcn/Radix use heavily (a bare `typeof === 'function'`
+// check misses those). Host tags (string types like 'button') yield null.
+function componentName(type) {
+  if (!type) return null;
+  if (typeof type === 'function') return type.displayName || type.name || null;
+  if (typeof type === 'object') {
+    if (type.displayName) return type.displayName;            // memo/forwardRef displayName
+    if (type.render) return type.render.displayName || type.render.name || null;  // forwardRef
+    if (type.type) return componentName(type.type);           // memo(Component)
+  }
+  return null;
+}
+
+// The React adapter of the locator cascade: the nearest component name + its dev-build
+// source (`_debugSource`, absent in prod and in React 19). Framework-specific and fully
+// guarded — returns null on non-React pages, minified prod names, or any internals change.
+export function readReactComponent(el) {
+  try {
+    const key = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+    if (!key) return null;
+    for (let f = el[key], hops = 0; f && hops < 80; f = f.return, hops++) {
+      const name = componentName(f.type);
+      if (name && name.length > 2) {   // skip host tags (null) and minified ≤2-char names
+        const ds = f._debugSource;
+        const source = (ds && ds.fileName)
+          ? { file: ds.fileName.split(/[\\/]/).pop(), line: ds.lineNumber ?? null }
+          : null;
+        return { name, source };
+      }
+    }
+    return null;
+  } catch { return null; }
+}
+
 export function buildLocator(el) {
   let text = null;
   try { text = snippetText(el.textContent); } catch { /* ignore */ }
-  return { text, hook: buildHook(el) };
+  return { component: readReactComponent(el), text, hook: buildHook(el) };
 }
