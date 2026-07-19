@@ -1,5 +1,6 @@
 import { rgbToHex } from '../utils/helpers/colorHelpers.js';
-import { COLORS, FONT, SIZE, WEIGHT, ensureOverlayFonts } from './overlayTokens.js';
+import { checkContrast } from '../utils/analyzers/contrastChecker.js';
+import { ACCENT, COLORS, FONT, SIZE, WEIGHT, ensureOverlayFonts } from './overlayTokens.js';
 
 const MENU_ID = 'awwdits-ctx';
 let menuEl = null;
@@ -100,6 +101,13 @@ function populate(el, rect, selectedRect) {
   if (showBg) {
     detail.push(colorRow('BG', bgHex));
   }
+  // Contrast is a text-only property. checkContrast walks up to the effective background —
+  // note it reads background-color only, so text over an image/gradient is measured against
+  // the nearest solid ancestor (or white), matching DevTools. Omit the row if it can't resolve.
+  if (hasText) {
+    const contrast = checkContrast(el);
+    if (contrast) detail.push(contrastRow(contrast.ratioLabel, contrast.grade, contrast.status));
+  }
   if (radius) {
     detail.push(labelRow('Radius', radius));
   }
@@ -132,12 +140,34 @@ function labelRow(label, value) {
     </div>`;
 }
 
+// Contrast verdict → pill tint. The color lives only in the pill, so the row reads as data.
+// An unknown status falls back to danger — a missing verdict should never read as "passing".
+export function contrastPillStyle(status) {
+  switch (status) {
+    case 'good':    return { bg: ACCENT.successMuted, fg: ACCENT.success };
+    case 'warning': return { bg: ACCENT.warningMuted, fg: ACCENT.warning };
+    default:        return { bg: COLORS.dangerMuted,  fg: COLORS.danger  };
+  }
+}
+
 function colorRow(label, hex) {
   return `
     <div style="display:flex;gap:8px;align-items:center">
       <span style="color:${COLORS.label};font:${SIZE.md} ${FONT.sans};width:68px;flex-shrink:0">${label}</span>
       <span style="width:12px;height:12px;border-radius:3px;background:${hex};border:1px solid ${COLORS.border};flex-shrink:0;display:inline-block"></span>
       <span style="color:${COLORS.fg};font:${SIZE.md} ${FONT.mono}">${hex}</span>
+    </div>`;
+}
+
+// Ratio as data (mono, like every value), plus the WCAG grade in a tinted pill that carries
+// the verdict color. The pill borrows the keycap's material language — the grade reads as data.
+export function contrastRow(ratioLabel, grade, status) {
+  const pill = contrastPillStyle(status);
+  return `
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="color:${COLORS.label};font:${SIZE.md} ${FONT.sans};width:68px;flex-shrink:0">Contrast</span>
+      <span style="color:${COLORS.fg};font:${SIZE.md} ${FONT.mono}">${ratioLabel}</span>
+      <span style="background:${pill.bg};color:${pill.fg};font:${WEIGHT.medium} ${SIZE.sm} ${FONT.mono};padding:1px 6px;border-radius:5px;line-height:1.5">${grade}</span>
     </div>`;
 }
 
