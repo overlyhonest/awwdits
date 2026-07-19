@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Awwdits",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Review any live page: comment on elements, tweak the CSS, and hand it off to a developer or an LLM as structured text.",
   "icons": {
     "16": "icons/icon-16.png",
