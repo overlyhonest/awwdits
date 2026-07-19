@@ -1,5 +1,6 @@
 import { rgbToHex } from '../helpers/colorHelpers.js';
 import { buildPath } from '../helpers/domPath.js';
+import { hasOwnText } from '../helpers/elementText.js';
 
 /**
  * Extract full computed styles for a single element
@@ -48,7 +49,9 @@ export function extractElementStyles(element) {
         left: computed.marginLeft,
       },
     },
-    typography: element.textContent?.trim() ? {
+    // Typography belongs to elements that render their own text, not containers whose
+    // descendants happen to contain text (element.textContent is true for any ancestor).
+    typography: hasOwnText(element) ? {
       // Editable text content — only for leaf text elements, so setting it back
       // can't clobber child elements. null means "not safely editable".
       text: element.children.length === 0 ? element.textContent : null,

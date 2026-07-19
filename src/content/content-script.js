@@ -9,6 +9,7 @@ import { calculateHealthScore } from '../utils/analyzers/healthScorer.js';
 import { checkContrast } from '../utils/analyzers/contrastChecker.js';
 import { buildSelector } from '../utils/extractors/styleExtractor.js';
 import { buildPath, findByPath, locateElement } from '../utils/helpers/domPath.js';
+import { hasOwnText } from '../utils/helpers/elementText.js';
 import { initCommentOverlay, setComments, openComposerFor, pulsePin, closeEditors } from './comment-overlay.js';
 import { initToolbar } from './toolbar.js';
 import { computeHeldTool, resolveEffective, commitOnUse } from './toolMode.js';
@@ -335,7 +336,7 @@ function activateInspector() {
   // (or a one-shot manual pick) selects an element.
   initElementSelector((element) => {
     const styles    = extractElementStyles(element);
-    const contrast  = element.textContent?.trim() ? checkContrast(element) : null;
+    const contrast  = hasOwnText(element) ? checkContrast(element) : null;
     const ancestors = buildAncestors(element);
     postToSidebar(MESSAGES.ELEMENT_SELECTED, { styles, contrast, ancestors });
     showPanel();

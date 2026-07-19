@@ -1,4 +1,5 @@
 import { rgbToHex } from '../utils/helpers/colorHelpers.js';
+import { hasOwnText } from '../utils/helpers/elementText.js';
 import { checkContrast } from '../utils/analyzers/contrastChecker.js';
 import { ACCENT, COLORS, FONT, SIZE, WEIGHT, ensureOverlayFonts } from './overlayTokens.js';
 
@@ -58,7 +59,9 @@ function populate(el, rect, selectedRect) {
   const w  = Math.round(rect.width);
   const h  = Math.round(rect.height);
 
-  const hasText = !!el.textContent?.trim();
+  // Text-related rows (Font, Line height, Color, Contrast) belong only to elements that
+  // render their own text — not to containers that merely wrap text-bearing children.
+  const hasText = hasOwnText(el);
 
   // Colors
   const bgHex      = rgbToHex(cs.backgroundColor);
