@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { IconChevronUp, IconChevronDown } from '../redesign/icons.jsx';
+import { IconChevronUp, IconChevronDown, IconLink, IconUnlink } from '../redesign/icons.jsx';
 import { COLOR, FONT } from '../redesign/tokens.js';
 import { SectionHeader } from '../Inspector/InspectorPanel.jsx';
 import { ContrastGlyph, Pill } from '../Inspector/AuditRow.jsx';
 import { contrastVerdict } from '../Inspector/inspectorStyles.js';
-import { formatDimension } from '../../../utils/helpers/dimensionHelpers.js';
+import { formatDimension, withUnit } from '../../../utils/helpers/dimensionHelpers.js';
+import { isGapContainer } from '../../../utils/helpers/layoutHelpers.js';
 
 // System-native <select> styling (used for font family + weight dropdowns).
 const SELECT_STYLE = {
@@ -84,21 +85,33 @@ function DashVRow() {
  * @param placeholder - fallback display text
  * @param step        - fixed step override (e.g. 100 for font-weight)
  * @param narrow      - if true, use fixed 80px width; otherwise flex:1
+ * @param unit        - unit given to a bare typed number; null for fields where a
+ *                      unitless number is already valid CSS (line-height)
  */
-function NumericInput({ value, onChange, onApply, label, placeholder, step: stepProp, narrow = false }) {
+function NumericInput({ value, onChange, onApply, label, placeholder, step: stepProp, narrow = false, unit = 'px' }) {
+  // A typed value reaches the page verbatim, so it has to be valid CSS before it
+  // leaves here — a bare "12" is silently dropped by setProperty.
+  const commit = () => {
+    const out = withUnit(value, unit);
+    if (!out) return;
+    if (out !== value) onChange(out);
+    onApply(out);
+  };
+
   const adjust = (delta) => {
     const raw = String(value || '');
     const num = parseFloat(raw);
     const safeNum = isNaN(num) ? 0 : num;
-    // Detect unit: everything after the first numeric run
+    // Detect unit: everything after the first numeric run. Falling back to the
+    // field's own unit (rather than always px) keeps unitless line-height unitless.
     const unitMatch = raw.match(/[a-z%]+$/i);
-    const unit = unitMatch ? unitMatch[0] : 'px';
-    const isDecimal = ['em', 'rem', 'lh', 'vw', 'vh'].includes(unit.toLowerCase());
+    const u = unitMatch ? unitMatch[0] : (unit || '');
+    const isDecimal = !u || ['em', 'rem', 'lh', 'vw', 'vh'].includes(u.toLowerCase());
     const step = stepProp ?? (isDecimal ? 0.1 : 1);
     const newNum = safeNum + delta * step;
     const formatted = step < 1
-      ? parseFloat(newNum.toFixed(3)).toString() + unit
-      : Math.round(newNum) + unit;
+      ? parseFloat(newNum.toFixed(3)).toString() + u
+      : Math.round(newNum) + u;
     onChange(formatted);
     onApply(formatted);
   };
@@ -153,7 +166,8 @@ function NumericInput({ value, onChange, onApply, label, placeholder, step: step
         value={value}
         placeholder={placeholder || '0'}
         onChange={e => onChange(e.target.value)}
-        onBlur={() => onApply(value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       />
       <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <button
@@ -227,6 +241,35 @@ function parseCorners(radius) {
   return { tl, tr, br, bl };
 }
 
+// ── Corner link toggle ─────────────────────────────────────────────────────────
+// Deliberately sits on the corner row, not above the W/H box — a chain icon next
+// to width and height reads as an aspect-ratio lock.
+function CornerLinkToggle({ linked, onToggle }) {
+  const Icon = linked ? IconLink : IconUnlink;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+      <span style={{ fontSize: 13, color: COLOR.foregroundLabel }}>Corners</span>
+      <div style={{ flex: 1 }} />
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={linked}
+        aria-label={linked ? 'Unlink corners' : 'Link corners'}
+        title={linked ? 'Corners linked — click to edit each corner separately' : 'Corners separate — click to link all four'}
+        style={{
+          width: 24, height: 24, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: linked ? COLOR.infoMuted : 'transparent',
+          color: linked ? COLOR.info : COLOR.foregroundWeak,
+          border: 'none', borderRadius: 6, padding: 0, cursor: 'pointer',
+        }}
+      >
+        <Icon size={14} stroke={2} />
+      </button>
+    </div>
+  );
+}
+
 // ── PaddingCross ───────────────────────────────────────────────────────────────
 function PaddingCross({ styles, onApplyStyle, radius }) {
   const pad = styles?.spacing?.padding ?? {};
@@ -239,21 +282,42 @@ function PaddingCross({ styles, onApplyStyle, radius }) {
   const [pBottom, setPBottom] = useState(pad.bottom || '0');
   const [pLeft,   setPLeft]   = useState(pad.left   || '0');
   const [pRight,  setPRight]  = useState(pad.right  || '0');
-  // Each corner is independent — its own state + its own border-*-radius property.
   const [rTL, setRTL] = useState(rc.tl);
   const [rTR, setRTR] = useState(rc.tr);
   const [rBR, setRBR] = useState(rc.br);
   const [rBL, setRBL] = useState(rc.bl);
+  // Start linked, since uniform corners are the common case — but an element that
+  // already has mismatched corners opens unlinked, so switching to Edit can never
+  // flatten a deliberate asymmetry the moment the user touches a field.
+  const [linked, setLinked] = useState(rc.tl === rc.tr && rc.tr === rc.br && rc.br === rc.bl);
+
+  const setAllCorners = (v) => { setRTL(v); setRTR(v); setRBR(v); setRBL(v); };
+  // Linked corners mirror while typing (so all four track the field being edited)
+  // and commit as one `border-radius`, which also keeps the change log to one entry.
+  const cornerChange = setter => v => (linked ? setAllCorners(v) : setter(v));
+  const cornerApply  = prop   => v => onApplyStyle(linked ? 'borderRadius' : prop, v);
+
+  const toggleLink = () => {
+    const next = !linked;
+    setLinked(next);
+    if (next && !(rTL === rTR && rTR === rBR && rBR === rBL)) {
+      // Linking mismatched corners means adopting one value — take the top-left.
+      setAllCorners(rTL);
+      onApplyStyle('borderRadius', withUnit(rTL));
+    }
+  };
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <CornerLinkToggle linked={linked} onToggle={toggleLink} />
+
       {/* Row 1: TL  pTop  TR */}
       <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-        <NumericInput narrow value={rTL} onChange={setRTL} onApply={v => v && onApplyStyle('borderTopLeftRadius', v)} />
+        <NumericInput narrow value={rTL} onChange={cornerChange(setRTL)} onApply={cornerApply('borderTopLeftRadius')} />
         <DashH />
         <NumericInput narrow value={pTop} onChange={setPTop} onApply={v => onApplyStyle('paddingTop', v)} />
         <DashH />
-        <NumericInput narrow value={rTR} onChange={setRTR} onApply={v => v && onApplyStyle('borderTopRightRadius', v)} />
+        <NumericInput narrow value={rTR} onChange={cornerChange(setRTR)} onApply={cornerApply('borderTopRightRadius')} />
       </div>
 
       <DashVRow />
@@ -269,11 +333,47 @@ function PaddingCross({ styles, onApplyStyle, radius }) {
 
       {/* Row 5: BL  pBottom  BR */}
       <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-        <NumericInput narrow value={rBL} onChange={setRBL} onApply={v => v && onApplyStyle('borderBottomLeftRadius', v)} />
+        <NumericInput narrow value={rBL} onChange={cornerChange(setRBL)} onApply={cornerApply('borderBottomLeftRadius')} />
         <DashH />
         <NumericInput narrow value={pBottom} onChange={setPBottom} onApply={v => onApplyStyle('paddingBottom', v)} />
         <DashH />
-        <NumericInput narrow value={rBR} onChange={setRBR} onApply={v => v && onApplyStyle('borderBottomRightRadius', v)} />
+        <NumericInput narrow value={rBR} onChange={cornerChange(setRBR)} onApply={cornerApply('borderBottomRightRadius')} />
+      </div>
+    </div>
+  );
+}
+
+// ── BlockedNotice ──────────────────────────────────────────────────────────────
+/**
+ * An inline `!important` edit always wins the cascade, so it shows up in DevTools
+ * — but the min/max constraints clamp the used value afterwards and the element
+ * never moves. Without this the panel reports success while the page sits still,
+ * which reads as a broken editor. Naming the constraint — and offering to override
+ * it — is the whole fix: the user can see why, and act on it.
+ */
+function BlockedNotice({ blocked, onApplyStyle }) {
+  if (!blocked?.by) return null;
+  const { property, requested, by, byValue, effective } = blocked;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 8, width: '100%',
+      padding: '8px 10px', borderRadius: 8,
+      background: COLOR.warningMuted ?? 'rgba(255,193,7,0.12)',
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, lineHeight: '17px', color: COLOR.foreground }}>
+          {property} is {requested}, but <code style={{ fontFamily: FONT.mono }}>{by}: {byValue}</code> holds it at {effective}.
+        </div>
+        <button
+          type="button"
+          onClick={() => onApplyStyle(by.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), requested)}
+          style={{
+            marginTop: 6, padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
+            fontFamily: 'inherit', fontSize: 13, color: COLOR.infoSolidFg, background: COLOR.infoSolid,
+          }}
+        >
+          Override {by}
+        </button>
       </div>
     </div>
   );
@@ -456,20 +556,20 @@ function FontWeightSelect({ value, onApply }) {
 }
 
 // ── NumericEditRow (label + NumericInput) ──────────────────────────────────────
-function NumericEditRow({ label, value, onApply, step }) {
+function NumericEditRow({ label, value, onApply, step, unit }) {
   const [val, setVal] = useState(value || '');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
       <span style={{ width: 88, flexShrink: 0, fontSize: 13, color: COLOR.foregroundLabel, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}
       </span>
-      <NumericInput value={val} onChange={setVal} onApply={onApply} step={step} />
+      <NumericInput value={val} onChange={setVal} onApply={onApply} step={step} unit={unit} />
     </div>
   );
 }
 
 // ── EditorPanel ────────────────────────────────────────────────────────────────
-function EditorPanel({ data, onApplyStyle, onApplyText, onReset }) {
+function EditorPanel({ data, onApplyStyle, onApplyText, onReset, blocked }) {
   if (!data) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, padding: '0 24px' }}>
@@ -493,7 +593,9 @@ function EditorPanel({ data, onApplyStyle, onApplyText, onReset }) {
         <div style={{ paddingBottom: 24, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <PaddingCross styles={styles} onApplyStyle={onApplyStyle} radius={radius} />
 
-          {styles?.layout?.gap != null && (
+          <BlockedNotice blocked={blocked} onApplyStyle={onApplyStyle} />
+
+          {isGapContainer(styles?.layout?.display) && (
             <GapRow value={styles.layout.gap} onApplyStyle={onApplyStyle} />
           )}
 
@@ -539,6 +641,7 @@ function EditorPanel({ data, onApplyStyle, onApplyText, onReset }) {
             <NumericEditRow
               label="Line height"
               value={styles.typography.lineHeight}
+              unit={null}   /* a unitless line-height is a ratio, not px */
               onApply={v => onApplyStyle('lineHeight', v)}
             />
             <TextEditRow

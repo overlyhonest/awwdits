@@ -30,4 +30,8 @@ export {
   IconVersionsFilled,
   IconSquareFilled,
   IconLinkFilled,
+  // Corner-radius link toggle. No filled variant exists for unlink, so the pair
+  // is kept outline together rather than mismatching weights across one control.
+  IconLink,
+  IconUnlink,
 } from '@tabler/icons-react';

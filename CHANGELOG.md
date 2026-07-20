@@ -5,6 +5,17 @@ All notable changes to Awwdits are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-07-20
+
+### Fixed
+- **Typed values in the editor now apply.** Typing a number into a corner radius, padding, margin, or gap field sent the bare number to the page — `border-top-left-radius: 12` is invalid CSS and was dropped silently, so the edit looked like it did nothing. Only the steppers worked, because they re-appended the unit. Typed values are now given a unit, and **Enter** commits an edit (previously only clicking away did).
+- **Stepping line height no longer appends `px`.** A unitless line height is a ratio, so `1.5` stepped to `1.6px` and changed meaning. The stepper now keeps the field's own unit convention.
+- **Gap is offered on every flex and grid container.** The control was keyed off the current gap value, so a container with no gap yet — exactly when you want to add one — showed nothing. Now keyed off `display`, in both the inspect and edit panels.
+
+### Added
+- **Blocked-edit detection for width and height.** An inline `!important` edit always wins the cascade, so it shows up in DevTools — but `min-height`/`max-height` clamp the used value afterwards and the element never moves. A height edit on a constrained element therefore looked broken with no explanation anywhere. The editor now detects that the element did not actually resize, names the constraint responsible (`min-height: 56px holds it at 56px`), and offers to override it. It reports only a constraint it can identify, so an element stalled by something else is never blamed on the wrong property.
+- **Linked corner radii.** A link toggle on the corner row ties all four corners together: typing in one mirrors to the rest and commits as a single `border-radius`, so the change log gets one entry instead of four. An element that already has mismatched corners opens unlinked, so entering edit mode can't flatten a deliberate asymmetry.
+
 ## [1.2.0] — 2026-07-19
 
 ### Added

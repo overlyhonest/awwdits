@@ -11,6 +11,8 @@ function App() {
   const [selectionId, setSelectionId] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [manualArmed, setManualArmed] = useState(false);
+  // Last edit that landed in the DOM but was overridden at layout time, if any.
+  const [blocked, setBlocked] = useState(null);
   const [notes, setNotes] = useState([]);
   const [pageUrl, setPageUrl] = useState('');
   const pageUrlRef = useRef('');
@@ -50,6 +52,7 @@ function App() {
           setSelectedElement(e.data.data);
           setSelectionId(c => c + 1);
           setManualArmed(false);
+          setBlocked(null);
           // Edit mode persists as you move between elements.
           break;
         case MESSAGES.CLEAR_SELECTION:
@@ -59,6 +62,12 @@ function App() {
           break;
         case MESSAGES.CHANGE_APPLIED:
           setNotes(prev => removeEmpty(upsertEdit(prev, e.data.data)));
+          // An edit that won the cascade but was clamped by min-*/max-* looks
+          // identical to a no-op from the panel — carry the reason so the editor
+          // can say what happened instead of appearing broken.
+          setBlocked(e.data.data.blocked
+            ? { ...e.data.data.blocked, property: e.data.data.property, requested: e.data.data.after }
+            : null);
           break;
         case MESSAGES.CHANGES_CLEARED:
           setNotes(prev => removeEmpty(clearEdits(prev, recordKey(e.data.data))));
@@ -283,6 +292,7 @@ function App() {
             onSelectAncestor={selectAncestor}
             onApplyStyle={applyStyle}
             onApplyText={applyText}
+            blocked={blocked}
           />
         )}
       </div>
