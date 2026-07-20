@@ -18,6 +18,7 @@ import { formatAll } from '../sidebar/notes/exportNotes.js';
 import { COLORS } from './overlayTokens.js';
 import { captureForEdit } from '../utils/resolve/elementContext.js';
 import { currentPageState } from '../utils/resolve/pageState.js';
+import { detectClamp } from '../utils/helpers/sizeClamp.js';
 
 // --- Google Font injector ---
 // Names of fonts the INSPECTED PAGE might use — detection data for the editor's
@@ -483,12 +484,25 @@ function handleSidebarMessage(e) {
         // Convert camelCase → kebab-case so setProperty works correctly
         const kebab = e.data.property.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
         const before = getComputedStyle(el).getPropertyValue(kebab).trim();
+        // Measure the rendered box, not the computed property: min-*/max-* clamp
+        // the used value, so the property can change while the element does not.
+        const axis = kebab === 'height' ? 'height' : 'width';
+        const sizeBefore = el.getBoundingClientRect()[axis];
         let context; try { context = captureForEdit(el, kebab); } catch { context = undefined; }   // capture from author rules, pre-override
         el.style.setProperty(kebab, e.data.value, 'important');
         if (e.data.property === 'fontFamily') injectGoogleFont(e.data.value);
+        const cs = getComputedStyle(el);
+        const blocked = detectClamp({
+          property: kebab,
+          requested: e.data.value,
+          sizeBefore,
+          sizeAfter: el.getBoundingClientRect()[axis],
+          minValue: cs.getPropertyValue(`min-${axis}`),
+          maxValue: cs.getPropertyValue(`max-${axis}`),
+        });
         postToSidebar(MESSAGES.CHANGE_APPLIED, {
           selector: buildSelector(el), path: buildPath(el), label: buildSelector(el),
-          property: kebab, before, after: e.data.value, context,
+          property: kebab, before, after: e.data.value, context, blocked,
         });
       }
       break;

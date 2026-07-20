@@ -74,6 +74,7 @@ function InspectZone({
   onSelectAncestor,
   onApplyStyle,
   onApplyText,
+  blocked,
 }) {
   if (!selected) {
     return <InspectEmptyState manualArmed={manualArmed} onPickManually={onManualPick} />;
@@ -97,6 +98,7 @@ function InspectZone({
           data={selected}
           onApplyStyle={onApplyStyle}
           onApplyText={onApplyText}
+          blocked={blocked}
         />
       ) : (
         <InspectorPanel data={selected} />

@@ -1,6 +1,7 @@
 import { LABEL, VALUE } from './inspectorStyles.js';
 import { FONT, COLOR } from '../redesign/tokens.js';
 import { isStray } from '../../../utils/analyzers/strayDetector.js';
+import { isGapContainer } from '../../../utils/helpers/layoutHelpers.js';
 import CopyValue from './CopyValue.jsx';
 
 function parseVal(v) {
@@ -136,7 +137,7 @@ function SpacingSection({ styles }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 16px', padding: 16 }}>
         {layout?.display && <LayoutCell label="Display" value={layout.display} />}
         {layout?.flexDirection && <LayoutCell label="Direction" value={layout.flexDirection} />}
-        {gap && <LayoutCell label="Gap" value={gap} />}
+        {isGapContainer(layout?.display) && <LayoutCell label="Gap" value={gap || '0px'} />}
         {hasRadius && <LayoutCell label="Radius" value={radius} />}
         {layout?.alignItems && <LayoutCell label="Align" value={layout.alignItems} />}
       </div>
